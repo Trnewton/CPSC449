@@ -18,11 +18,13 @@ module Ex1 where
 import Ex1Types
 
 -- This imports some standard library functions for you to use.
+-- This imports some standard library functions for you to use.
 import Prelude (Int, Float, Integer, Eq, Ord, Bool (..), String, otherwise, abs, (+), (-), subtract, (*), (/), (==), (/=), (<), (<=), (>), (>=), (||), (&&), rem, mod, div, quot, max, min, fromIntegral, undefined, error, show)
 -- This includes helpful functions for debugging.
 import Debug.Trace
 import Control.Exception (TypeError)
 import Distribution.Simple.Utils (xargs)
+import System.Console.Haskeline (Interrupt)
 
 head :: [a] -> a
 head [] = error "empty list"
@@ -40,6 +42,12 @@ sum (x:xs) = x + sum xs
 length :: [a] -> Int
 length [] = 0
 length (x:xs) = 1 + length xs
+
+repeat :: a -> [a]
+repeat a = a:repeat a
+repeat' :: a -> Int -> [a]
+repeat' _ 0 = []
+repeat' a n = a:repeat' a (n-1)
 
 avg :: [Int] -> Float
 avg lst = fromIntegral (sum lst) / fromIntegral(length lst)
@@ -60,16 +68,24 @@ gcd a b
     | b == 0 = a
     | otherwise = gcd b (a `mod` b)
 
--- cat :: [a] -> [a] -> [a]
--- cat [] b = b
--- cat (xxs) b
+notlog :: Integer -> Integer
+notlog n
+    | n <= 1 = 0
+    | otherwise = 1 + notlog (n `quot` 2)
 
--- quicksort :: (Ord a) => [a] -> [a]
--- quicksort [] = []
--- quicksort (x:xs) =
---     let least = quicksort [a | a <- xs, a <= x]
---         most = quicksort [a | a <- xs, a > x]
---     in least:x
+fact :: Integer -> Integer
+fact 0 = 1
+fact n = n * fact (n-1)
+
+append :: [a] -> [a] -> [a]
+append [] b = b
+append (x:xs) b = x:(append xs b)
+
+filter :: (a -> Bool) -> [a] -> [a]
+filter _ [] = []
+filter f (x:xs)
+    | f x = x: filter f xs
+    | otherwise = filter f xs
 
 -- | Q1.
 avgThree :: Int -> Int -> Int -> Float
@@ -80,11 +96,6 @@ maxThree :: Int -> Int -> Int -> (Int, Int)
 maxThree a b c = let m = max' [a,b,c] in (m, sum [1 | x <- [a,b,c], x == m])
 
 -- | Q3.
-notlog :: Integer -> Integer
-notlog n
-    | n <= 1 = 0
-    | otherwise = 1 + notlog (n `quot` 2)
-
 invExp :: Integer -> SF Integer
 invExp n
     | n <= 0 = FF
@@ -92,20 +103,25 @@ invExp n
 
 -- | Q4.
 myLcm :: Int -> Int -> Int
-myLcm a b = abs(a * b) `quot` (gcd a b)
+myLcm a b = abs(a * b) `quot` gcd a b
 
 -- | Q5.
 binom :: Integer -> Integer -> Integer
-binom = undefined
+binom 0 _ = 1
+binom k n = fact n `quot` (fact k * fact (n-k))
 
 -- | Q6.
+grow' :: String -> Int -> String
+grow' [] _ = []
+grow' (a:as) n = append (repeat' a n) (grow' as (n+1))
+
 grow :: String -> String
-grow = undefined
+grow lst = grow' lst 1
 
 -- | Q7.
 instrictorder :: [Int] -> Bool
 instrictorder [] = True
-instrictorder (x:[]) = True
+instrictorder [x] = True
 instrictorder (x:y:xs) = (x > y) && instrictorder xs
 
 -- | Q8.
@@ -114,7 +130,11 @@ expensive lst cost = [fst pair | pair <- lst, snd pair > cost]
 
 -- | Q9.
 sortCheapest :: [(String, Int)] -> [(String, Int)]
-sortCheapest = undefined
+sortCheapest [] = []
+sortCheapest (x:xs) =
+    let least = sortCheapest [a | a <- xs, snd a <= snd x]
+        most = sortCheapest [a | a <- xs, snd a > snd x]
+    in append (append least [x]) most
 
 -- | Q10.
 -- divisors :: Integer -> [Integer]
@@ -124,8 +144,14 @@ sortCheapest = undefined
 
 -- | Q11.
 substring :: String -> String -> Bool
-substring = undefined
+substring _ [] = False
+substring [] _ = True
+substring at@(a:as) (b:bs)
+    | a == b = substring as bs
+    | otherwise = substring at bs
 
 -- | Q12.
-sublists :: [a] -> [[a]]
-sublists = undefined
+-- sublists :: [a] -> [[a]]
+-- sublists [] = []
+-- sublists [a] = [[a]]
+-- sublists lst = [sublists ]
