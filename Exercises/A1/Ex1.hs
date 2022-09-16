@@ -77,9 +77,9 @@ fact :: Integer -> Integer
 fact 0 = 1
 fact n = n * fact (n-1)
 
-append :: [a] -> [a] -> [a]
-append [] b = b
-append (x:xs) b = x:(append xs b)
+(++) :: [a] -> [a] -> [a]
+(++) [] b = b
+(++) (x:xs) b = x:(++) xs b
 
 filter :: (a -> Bool) -> [a] -> [a]
 filter _ [] = []
@@ -111,12 +111,10 @@ binom 0 _ = 1
 binom k n = fact n `quot` (fact k * fact (n-k))
 
 -- | Q6.
-grow' :: String -> Int -> String
-grow' [] _ = []
-grow' (a:as) n = append (repeat' a n) (grow' as (n+1))
-
 grow :: String -> String
 grow lst = grow' lst 1
+    where   grow' [] _ = []
+            grow' (a:as) n = repeat' a n ++ grow' as (n+1)
 
 -- | Q7.
 instrictorder :: [Int] -> Bool
@@ -134,13 +132,18 @@ sortCheapest [] = []
 sortCheapest (x:xs) =
     let least = sortCheapest [a | a <- xs, snd a <= snd x]
         most = sortCheapest [a | a <- xs, snd a > snd x]
-    in append (append least [x]) most
+    in least ++ [x] ++ most
 
 -- | Q10.
--- divisors :: Integer -> [Integer]
--- divisors n
---     | n <= 0 = []
---     | otherwise = [m | m <- [1..n], (n `mod` m) == 0, ]
+divisors :: Integer -> [Integer]
+divisors n
+    | n <= 1 = []
+    | mod n 2 == 0 = 2:divisors (quot n 2)
+    | otherwise = divisors' n 3 where
+        divisors' n m
+            | n <= 1 = []
+            | mod n m == 0 = m:divisors' (quot n m) m
+            | otherwise = divisors' n (m+2)
 
 -- | Q11.
 substring :: String -> String -> Bool
@@ -151,7 +154,7 @@ substring at@(a:as) (b:bs)
     | otherwise = substring at bs
 
 -- | Q12.
--- sublists :: [a] -> [[a]]
--- sublists [] = []
--- sublists [a] = [[a]]
--- sublists lst = [sublists ]
+sublists :: [a] -> [[a]]
+sublists [] = [[]]
+sublists (a:as) = [a:lst | lst <- power_as] ++ power_as
+    where power_as = sublists as
