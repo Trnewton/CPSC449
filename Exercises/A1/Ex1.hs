@@ -18,13 +18,9 @@ module Ex1 where
 import Ex1Types
 
 -- This imports some standard library functions for you to use.
--- This imports some standard library functions for you to use.
 import Prelude (Int, Float, Integer, Eq, Ord, Bool (..), String, otherwise, abs, (+), (-), subtract, (*), (/), (==), (/=), (<), (<=), (>), (>=), (||), (&&), rem, mod, div, quot, max, min, fromIntegral, undefined, error, show)
 -- This includes helpful functions for debugging.
 import Debug.Trace
-import Control.Exception (TypeError)
-import Distribution.Simple.Utils (xargs)
-import System.Console.Haskeline (Interrupt)
 
 head :: [a] -> a
 head [] = error "empty list"
