@@ -87,6 +87,7 @@ filter f (x:xs)
     | f x = x: filter f xs
     | otherwise = filter f xs
 
+-- TODO: Somehow overflows
 -- | Q1.
 avgThree :: Int -> Int -> Int -> Float
 avgThree a b c = avg [a,b,c]
@@ -105,6 +106,7 @@ invExp n
 myLcm :: Int -> Int -> Int
 myLcm a b = abs(a * b) `quot` gcd a b
 
+-- TODO: Factorial overflows
 -- | Q5.
 binom :: Integer -> Integer -> Integer
 binom 0 _ = 1
@@ -134,6 +136,7 @@ sortCheapest (x:xs) =
         most = sortCheapest [a | a <- xs, snd a > snd x]
     in least ++ [x] ++ most
 
+-- TODO: Remove copies
 -- | Q10.
 divisors :: Integer -> [Integer]
 divisors n
@@ -145,6 +148,7 @@ divisors n
             | mod n m == 0 = m:divisors' (quot n m) m
             | otherwise = divisors' n (m+2)
 
+-- TODO: Backtracking
 -- | Q11.
 substring :: String -> String -> Bool
 substring _ [] = False
