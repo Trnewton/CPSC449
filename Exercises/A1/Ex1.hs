@@ -18,7 +18,7 @@ module Ex1 where
 import Ex1Types
 
 -- This imports some standard library functions for you to use.
-import Prelude (Int, Float, Integer, Eq, Ord, Bool (..), String, otherwise, abs, (+), (-), subtract, (*), (/), (==), (/=), (<), (<=), (>), (>=), (||), (&&), rem, mod, div, quot, max, min, fromIntegral, undefined, error, show)
+import Prelude (Int, Float, Integer, Eq, Ord, Bool (..), Num, String, otherwise, abs, (+), (-), subtract, (*), (/), (==), (/=), (<), (<=), (>), (>=), (||), (&&), rem, mod, div, quot, max, min, fromIntegral, undefined, error, show)
 -- This includes helpful functions for debugging.
 import Debug.Trace
 
@@ -31,7 +31,7 @@ tail [] = error "empty list"
 tail [x] = x
 tail (x:xs) = tail xs
 
-sum :: [Int] -> Int
+sum :: (Num a) => [a] -> a
 sum [] = 0
 sum (x:xs) = x + sum xs
 
@@ -44,9 +44,6 @@ repeat a = a:repeat a
 repeat' :: a -> Int -> [a]
 repeat' _ 0 = []
 repeat' a n = a:repeat' a (n-1)
-
-avg :: [Int] -> Float
-avg lst = fromIntegral (sum lst) / fromIntegral(length lst)
 
 max' :: (Ord a) => [a] -> a
 max' [] = error "empty list"
@@ -69,24 +66,14 @@ notlog n
     | n <= 1 = 0
     | otherwise = 1 + notlog (n `quot` 2)
 
-fact :: Integer -> Integer
-fact 0 = 1
-fact n = n * fact (n-1)
-
 (++) :: [a] -> [a] -> [a]
 (++) [] b = b
 (++) (x:xs) b = x:(++) xs b
 
-filter :: (a -> Bool) -> [a] -> [a]
-filter _ [] = []
-filter f (x:xs)
-    | f x = x: filter f xs
-    | otherwise = filter f xs
 
--- TODO: Somehow overflows
 -- | Q1.
 avgThree :: Int -> Int -> Int -> Float
-avgThree a b c = avg [a,b,c]
+avgThree a b c = fromIntegral a / 3 + fromIntegral b / 3 + fromIntegral c / 3
 
 -- | Q2.
 maxThree :: Int -> Int -> Int -> (Int, Int)
@@ -100,13 +87,18 @@ invExp n
 
 -- | Q4.
 myLcm :: Int -> Int -> Int
-myLcm a b = abs(a * b) `quot` gcd a b
+myLcm a b
+    | a==0 && b==0 = 0
+    | otherwise = abs(a * b `quot` gcd a b)
 
--- TODO: Factorial overflows
 -- | Q5.
 binom :: Integer -> Integer -> Integer
-binom 0 _ = 1
-binom k n = fact n `quot` (fact k * fact (n-k))
+binom n k
+    | k > n = error "Need k < n"
+    | n <= 0 || k < 0 = error "Need n >= 1 and k >= 0"
+    | k == 0 = 1
+    | k > (n `quot` 2) = binom n (n-k)
+    | otherwise = n * (binom (n-1) (k-1)) `quot` k
 
 -- | Q6.
 grow :: String -> String
@@ -132,25 +124,37 @@ sortCheapest (x:xs) =
         most = sortCheapest [a | a <- xs, snd a > snd x]
     in least ++ [x] ++ most
 
--- TODO: Remove copies
 -- | Q10.
+
+quott :: Integer -> Integer -> Integer
+quott n m
+    | m==0 = error "Division by zero"
+    | mod n m == 0 = quott (quot n m) m
+    | otherwise = n
+
 divisors :: Integer -> [Integer]
 divisors n
     | n <= 1 = []
-    | mod n 2 == 0 = 2:divisors (quot n 2)
+    | mod n 2 == 0 = 2:divisors (quott n 2)
     | otherwise = divisors' n 3 where
         divisors' n m
             | n <= 1 = []
-            | mod n m == 0 = m:divisors' (quot n m) m
+            | mod n m == 0 = m:divisors' (quott n m) m
             | otherwise = divisors' n (m+2)
 
--- TODO: Backtracking
 -- | Q11.
+headeq :: (Eq a) => [a] -> [a] -> Bool
+headeq [] _ = True
+headeq _ [] = False
+headeq (a:as) (b:bs)
+    | a==b = headeq as bs
+    | otherwise = False
+
 substring :: String -> String -> Bool
-substring _ [] = False
 substring [] _ = True
+substring _ [] = False
 substring at@(a:as) (b:bs)
-    | a == b = substring as bs
+    | a == b && headeq as bs = True
     | otherwise = substring at bs
 
 -- | Q12.
