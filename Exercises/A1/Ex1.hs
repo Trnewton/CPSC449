@@ -50,6 +50,22 @@ max' [] = error "empty list"
 max' [x] = x
 max' (x:xs) = max x (max' xs)
 
+numeq :: (Eq m) => [m] -> m -> Int
+numeq [] _  = 0
+numeq (x:xs) m
+    |x == m = 1 + numeq xs m
+    |x /= m = 0 + numeq xs m
+
+filter :: (a -> Bool) -> [a] -> [a]
+filter _ [] = []
+filter f (x:xs)
+    | f x = x : filter f xs
+    | otherwise = filter f xs
+
+map :: (a -> b) -> [a] -> [b]
+map _ [] = []
+map f (a:as) = f a : map f as
+
 fst :: (a,b) -> a
 fst (a,_) = a
 
@@ -70,6 +86,8 @@ notlog n
 (++) [] b = b
 (++) (x:xs) b = x:(++) xs b
 
+(.) :: (b -> c) -> (a -> b) -> (a -> c)
+f . g = \x -> f (g x)
 
 -- | Q1.
 avgThree :: Int -> Int -> Int -> Float
@@ -77,7 +95,7 @@ avgThree a b c = fromIntegral a / 3 + fromIntegral b / 3 + fromIntegral c / 3
 
 -- | Q2.
 maxThree :: Int -> Int -> Int -> (Int, Int)
-maxThree a b c = let m = max' [a,b,c] in (m, sum [1 | x <- [a,b,c], x == m])
+maxThree a b c = let m = max' [a,b,c] in (m, numeq [a,b,c] m)
 
 -- | Q3.
 invExp :: Integer -> SF Integer
@@ -114,18 +132,17 @@ instrictorder (x:y:xs) = (x > y) && instrictorder xs
 
 -- | Q8.
 expensive :: [(String, Int)] -> Int -> [String]
-expensive lst cost = [fst pair | pair <- lst, snd pair > cost]
+expensive lst cost =  [fst pair | pair <- lst, snd pair > cost]
 
 -- | Q9.
 sortCheapest :: [(String, Int)] -> [(String, Int)]
 sortCheapest [] = []
 sortCheapest (x:xs) =
-    let least = sortCheapest [a | a <- xs, snd a <= snd x]
-        most = sortCheapest [a | a <- xs, snd a > snd x]
+    let least = sortCheapest (filter ((<=snd x).snd) xs)
+        most = sortCheapest (filter ((>snd x).snd) xs)
     in least ++ [x] ++ most
 
 -- | Q10.
-
 quott :: Integer -> Integer -> Integer
 quott n m
     | m==0 = error "Division by zero"
@@ -160,5 +177,5 @@ substring at@(a:as) (b:bs)
 -- | Q12.
 sublists :: [a] -> [[a]]
 sublists [] = [[]]
-sublists (a:as) = [a:lst | lst <- power_as] ++ power_as
+sublists (a:as) = map (a:) power_as ++ power_as
     where power_as = sublists as
