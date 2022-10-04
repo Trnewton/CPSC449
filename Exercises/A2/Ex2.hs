@@ -18,14 +18,17 @@
 --      7. To submit this to GradeScope, submit ONLY this file.
 --
 --      8. Have lots of fun :). Wahoo!!
+
 module Ex2 where
 
 -- This imports the required types and support functions for the questions.
 import Ex2Types
 
--- This imports some standard Prelude functions for you to use.
 import Prelude (Int, Float, Integer, Eq, Ord, Bool (..), Double, String, otherwise, Num, Integral, Fractional, abs, (+), (-), (^), subtract, (*), (/), signum, (==), (/=), (<), (<=), (>), (>=), compare, (||), (&&), not, rem, mod, div, quot, max, min, fromIntegral, toInteger, undefined, error, Show, show, Bounded, minBound, maxBound, seq)
 import Debug.Trace
+
+
+-- General Useful Functions
 
 -- My foldl with slightly bad typing
 foldl :: (b -> a -> b) -> b -> [a] -> b
@@ -44,81 +47,288 @@ map f (a:as) = f a : map f as
 filter :: (a -> Bool) -> [a] -> [a]
 filter f = foldr (\x acc -> if f x then x : acc else acc) []
 
+length :: [a] -> Int
+length [] = 0
+length (a:as) = 1 + length as
+
+fst :: (a,b) -> a
+fst (a,_) = a
+
+snd :: (a,b) -> b
+snd (_,b) = b
+
+head :: [a] -> a
+head [] = error "Error: empty list"
+head (a:as) = a
+
+product :: (Num a) => [a] -> a
+product = foldl (*) 1
+
 (++) :: [a] -> [a] -> [a]
 (++) [] b = b
 (++) (x:xs) b = x:(++) xs b
 
+(.) :: (b -> c) -> (a -> b) -> (a -> c)
+f . g = \x -> f (g x)
 
--- | Q1.
+(!!) :: [a] -> Int -> a
+(!!) [] _ = error "Error: Index too large"
+(!!) (a:as) n
+    | n==0      = a
+    | n < 0     = error "Error: Negative index"
+    | otherwise = (!!) as (n-1)
+
+id :: a -> a
+id a = a
+
+-- Q2 Auxillary
+isPrime :: Integer -> Bool
+isPrime n
+    | n < 0         = error "Error: Number must be positive"
+    | n <= 1        = False
+    | mod n 2 == 0  = False
+    | otherwise     = isPrime' 3 n
+    where -- Perform brute force search all values less that root n with step size 2
+        isPrime' i n
+            | i*i > n       = True
+            | mod n i == 0  = False
+            | otherwise     = isPrime' (i+2) n
+
+-- Q5 Auxillary
+-- Merge two sorted lists into a sorted list
+merge :: (Ord a) => [a] -> [a] -> [a]
+merge [] bs = bs
+merge as [] = as
+merge at@(a:as) bt@(b:bs) = if a <= b then a:(merge as bt) else b:(merge at bs)
+
+-- Merges a list of ordered lists
+mergeall :: (Ord a) => [[a]] -> [a]
+mergeall []     = []
+mergeall [a]    = a
+mergeall xs     = mergeall (mergeall' xs)
+    where
+        -- Helper for mergeall.
+        mergeall' (a:b:t)   = merge a b : mergeall' t
+        mergeall' t         = t -- singleton and empty case
+
+-- Q6 Auxillary
+-- Does map over two lists (similar to map f zip [a] [b])
+dmap :: (a -> b -> c) -> [a] -> [b] -> [c]
+dmap _ _ [] = []
+dmap _ [] _ = []
+dmap f (a:as) (b:bs) = (f a b):(dmap f as bs)
+
+dmap' f = foldr foo (\_ -> [])
+    where
+        foo a y b = case b of
+                        [] -> []
+                        (x:xs) -> (f a x):(y xs)
+
+-- Checks if all values of list are equal
+alleq :: (Eq a) => [a] -> a -> Bool
+alleq as a = foldl (\acc x -> acc && (x == a)) True as
+
+-- Q9 Auxillary
+-- factorial from http://www.willamette.edu/~fruehr/haskell/evolution.html
+fac :: (Integral n) => n -> n
+fac n = product [1..n]
+
+-- Q10 Auxillary
+-- foldrose :: (a -> [b] -> b) -> Rose a -> b
+-- foldrose f (RS a ts) = f a (map (foldrose f) ts)
+
+
+
+-- 1
 -- We do a fold because its cool...
 twoTautology :: ((Bool, Bool) -> Bool) -> Bool
 twoTautology f = foldl (\val pair -> (val && f pair)) True truth_pairs
     where truth_pairs = [(a,b) | a <- [True, False], b <- [True, False]]
 
--- Two logical formulas are equivalent if the statement of them being equal is a
--- tautology
+-- Two logical formulas are equivalent if the statement of them being equal is
+-- always true i.e. a tautology
 twoEquiv :: ((Bool, Bool) -> Bool) -> ((Bool, Bool) -> Bool) -> Bool
 twoEquiv f g = twoTautology (\pair -> ((f pair) == (g pair)))
 
--- | Q2
+
+--2
 badFermat :: Integer
-badFermat = undefined
+badFermat = (foldr (\n acc -> if isPrime (2^(2^n) + 1) then acc else n:acc) [] [1..]) !! 0
 
--- | Q3
-collatzIndex :: Int -> SF [Int]
-collatzIndex = undefined
 
--- | Q4
+-- 3
+collatzIndex ::  Int -> SF [Int]
+collatzIndex n
+    | n <= 0        = FF -- Negative intergers do not have collatz indeces
+    | otherwise     = SS (collatzIndex' n)
+    where
+        collatzIndex' n -- Get next collatz interger
+            | n == 1        = [1]
+            | otherwise     = n:(collatzIndex' (collatz n))
+
+
+-- 4
 bisection :: (Double -> Double) -> (Double, Double) -> SF Double
-bisection = undefined
+bisection f (a,b)
+-- Make sure a < b
+    | a < b = bisection' f (a,b)
+    | a > b = bisection' f (b,a)
+    | otherwise = FF
+    where
+        bisection' f (a,b)
+            -- If our function value is close to zero we cannot tell it is not zero
+            | abs fc < e = SS c
+            -- If are interval bounds are too close we cannot proceed
+            | (b - a) / 2 < e = FF
+            -- Do the actual bisection step
+            | signum fc == signum (f a) = bisection' f (c,b)
+            | otherwise                 = bisection' f (a,c)
+            where   c = (a + b) / 2
+                    fc = f c
 
--- | Q5
-bsort :: (a -> a -> Bool) -> [a] -> [a]
-bsort = undefined
 
--- TODO: #1 Redefine using folds
-qsort :: (a -> a -> Bool) -> [a] -> [a]
-qsort _ [] = []
-qsort f (a:as) =
-    let least = qsort f (filter (a `f`) as)
-        most = qsort f (filter (`f` a) as)
-    in least ++ [a] ++ most
+-- 5
+bsort:: (Ord a) => [a] -> [a]
+bsort as = foldl (\acc _ -> bubble acc) as as
+    where
+        bubble (a:b:as) -- Inner bubble operation
+            | a > b     = b : bubble (a:as)
+            | otherwise = a : bubble (b:as)
+        bubble a = a -- Singleton and empty case
 
-msort :: (a -> a -> Bool) -> [a] -> [a]
-msort = undefined
+qsort :: (Ord a) => [a] -> [a]
+qsort [] = []
+qsort (a:as) =
+    let least = qsort (filter (a >=) as)-- Get the elements smaller than a and sort
+        most = qsort (filter (a <) as)  -- Get the elements larger than a and sort
+    in least ++ [a] ++ most -- add up
 
--- | Q6
-transpose :: Matrix a -> SF (Matrix a)
-transpose = undefined
+-- Adapted from https://hackage.haskell.org/package/base-4.17.0.0/docs/src/Data.OldList.html#sort
+-- The idea is that we split the list into increasing lists then merge which takes
+-- advantage of partial ordered sublists instead of spliting naively
+msort :: (Ord a) => [a] -> [a]
+msort = mergeall . sequences
+    where
+        -- Creates list of increasing  lists
+        sequences (a:b:xs)
+            | a > b     = descending b [a] xs
+            | otherwise = ascending b (a:) xs
+        sequences xs = [xs] -- singleton and empty case
+        -- Creates increasing list for descending numbers
+        descending a as (b:bs)
+            | a > b         = descending b (a:as) bs
+        descending a as bs  = (a:as): sequences bs
+        -- Creates increasing list for ascending numbers
+        ascending a as (b:bs)
+            | a <= b        = ascending b (\ys -> as (a:ys)) bs
+        ascending a as bs   = as [a]: sequences bs
 
-addMat :: DoubleMatrix -> DoubleMatrix -> SF DoubleMatrix
-addMat = undefined
+-- 6
+dimension :: Matrix a -> (SF (Int,Int))
+dimension mat
+    | alleq dims (head dims)    = SS (dims !! 0, length dims) -- Make sure each row has same dim
+    | otherwise                 = FF
+    where dims = map length mat -- Get dim of each row
 
-multMat :: DoubleMatrix -> DoubleMatrix -> SF DoubleMatrix
-multMat = undefined
+transpose :: Matrix a -> (SF (Matrix a))
+transpose mat = case dimension mat of
+    FF          -> FF
+    SS (n,m)    -> SS (foldr (dmap (:)) i mat)
+        where i = []:i
 
--- | Q7.
+addMat :: DoubleMatrix -> DoubleMatrix -> (SF DoubleMatrix)
+addMat m1 m2 = case (dimension m1, dimension m2) of
+    -- Check that matrices are not bad
+    (FF, _) -> FF
+    (_, FF) -> FF
+    (d1, d2)
+        | d1 == d2  -> SS (dmap (dmap (+)) m1 m2) -- Do actual addition
+        | otherwise -> FF -- Bad
+
+multMat :: DoubleMatrix -> DoubleMatrix -> (SF DoubleMatrix)
+multMat m1 m2 = case (dimension m1, dimension m2) of
+    -- Check that matrices are not bad
+    (SS (n1,m1), SS (n2,m2))
+    -- TODO: Are we row or column based?
+        | m1 == n2  -> SS [[]]--TODO: Make actually matrix mult
+        | otherwise -> FF -- Bad
+    _ -> FF
+
+
+-- 7
 nreverse :: [a] -> [a]
-nreverse = undefined
+nreverse [] = []
+nreverse (a:as) = nreverse as ++ [a]
 
 freverse :: [a] -> [a]
-freverse = undefined
+freverse as = shunt as []
+    where
+        shunt :: [a] -> [a] -> [a]
+    -- If first list is empty we have shunted everything over
+        shunt [] bs = bs
+    -- Take first element of first list and shunts it over to second list
+        shunt (a:as) bs = shunt as (a:bs)
 
+-- Instead of using foldl we use foldr to build up a function as our fold variable
+-- which returns the reversed list
 hreverse :: [a] -> [a]
-hreverse = undefined
+hreverse as = foldr (\a f -> (\x -> f(a:x))) id as []
 
--- | Q8.
-isAVL :: Ord a => STree a -> Bool
-isAVL = undefined
 
--- | Q9.
-all_paths :: Rose a -> [[a]]
-all_paths = undefined
 
--- | Q10.
-factorialOf1891 :: Integer
-factorialOf1891 = undefined
+-- 8
+-- Adds
+add_fst :: a -> ([a], b) -> ([a], b)
+add_fst a (as, b) = ((a:as), b)
 
--- | Q11.
-widthRose :: Rose a -> Int
-widthRose = undefined
+all_paths :: Expr f x -> [([f],x)]
+all_paths (Var x) = [([],x)]
+all_paths (Fun f fs) = map (add_fst f) (foldl (\acc t -> acc ++ (all_paths t)) [] fs)
+
+
+-- 9
+fact :: Integer
+fact = fac 1891
+
+
+-- 10
+foldrose :: (a -> [b] -> b) -> Rose a -> b
+foldrose f (RS a ts) = f a (map (foldrose f) ts)
+
+take :: Int -> [a] -> [a]
+take _ [] = []
+take n (a:as) = a : take (n-1) as
+
+-- TODO: #3 Make this not terrible
+maxk :: (Ord a) => [a] -> Int -> [a]
+maxk as n = take n (hreverse (msort as))
+
+widthRose :: Integral a =>  Rose a -> Int
+widthRose t = snd (foldrose widthroot t)
+    where
+        widthroot _ [] = (0, 0)
+        widthroot _ cs = foldr foo (0, 0, 0) cs
+
+        foo (m1, m2, m)
+
+
+-- 11
+foldavl :: (b -> a -> b -> b) -> b -> STree a -> b
+foldavl _ base Leaf = base
+foldavl f base (Node lt a rt) = f (foldavl f base lt) a (foldavl f base rt)
+
+is_ordered :: (Ord a) => STree a -> Bool
+is_ordered (Node Leaf a rt@(Node _ ra _))               = (a < ra) && (is_ordered rt)
+is_ordered (Node lt@(Node _ la _) a Leaf)               = (la < a) && (is_ordered lt)
+is_ordered (Node lt@(Node _ la _) a rt@(Node _ ra _))   = (la < a) && (a < ra) && (is_ordered lt) && (is_ordered rt)
+is_ordered _                                            = True
+
+is_balanced :: STree a -> Bool
+is_balanced Leaf = True -- If the root is a leaf we are done
+is_balanced (Node lt _ rt) = abs(ld - rd) <= 1
+    where -- use fold to get depths of each branch
+        ld = foldavl (\ld _ rd -> if ld >= rd then ld + 1 else rd + 1) 0 lt
+        rd = foldavl (\ld _ rd -> if ld >= rd then ld + 1 else rd + 1) 0 rt
+
+strong_balance ::  STree a -> STree a
+strong_balance _ = undefined
