@@ -14,22 +14,18 @@ collatz n
 
 -- | The 'machine epsilon' as given in the assignment for Q4.
 e :: Double
-e = 2 ^^ (-6)
+e = 2 ^^ (-7)
 
 -- | Matrix data types for Q6.
 type Matrix a = [[a]]
 type DoubleMatrix = Matrix Double
 
--- | Binary search tree data type for Q11.
+-- | Binary search tree data type for Q8.
 data STree a
     = Node (STree a) a (STree a)
     | Leaf
   deriving (Show, Eq, Ord, Read)
 
--- | Expression data type for Q8.
-data Expr f x = Fun f [Expr f x] | Var x
-  deriving (Show, Eq, Read)
-
 -- | Rose tree data type for Q10.
 data Rose a = RS a [Rose a]
-  deriving (Show, Eq, Read)
+  deriving (Show, Eq, Ord, Read)
