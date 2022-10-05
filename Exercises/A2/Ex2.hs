@@ -330,11 +330,29 @@ foldavl :: (b -> a -> b -> b) -> b -> STree a -> b
 foldavl _ base Leaf = base
 foldavl f base (Node lt a rt) = f (foldavl f base lt) a (foldavl f base rt)
 
+-- TODO: #7 Simplify and cleanup is_ordered
 is_ordered :: (Ord a) => STree a -> Bool
-is_ordered (Node Leaf a rt@(Node _ ra _))               = (a < ra) && (is_ordered rt)
-is_ordered (Node lt@(Node _ la _) a Leaf)               = (la < a) && (is_ordered lt)
-is_ordered (Node lt@(Node _ la _) a rt@(Node _ ra _))   = (la < a) && (a < ra) && (is_ordered lt) && (is_ordered rt)
-is_ordered _                                            = True
+is_ordered t = case foldavl is_ordered' Bot t of UB -> False
+                                                 _ -> True
+
+data Fkleaf a
+    = MinMax (a,a)
+    | Bot
+    | UB
+
+is_ordered' :: (Ord a) => Fkleaf a -> a -> Fkleaf a -> Fkleaf a
+is_ordered' Bot c Bot = MinMax (c,c)
+is_ordered' Bot c (MinMax (rmin, _))
+    | rmin < c = UB
+    | otherwise = MinMax (c, rmin)
+is_ordered' (MinMax (_, lmax)) c Bot
+    | c < lmax = UB
+    | otherwise = MinMax (lmax, c)
+is_ordered' (MinMax (_, lmax)) c (MinMax (rmin, _))
+    | c < lmax = UB
+    | rmin < c = UB
+    | otherwise = MinMax (lmax, rmin)
+is_ordered' _ _ _ = UB
 
 is_balanced :: STree a -> Bool
 is_balanced tr = case status of (SS _) -> True
@@ -348,4 +366,9 @@ is_balanced tr = case status of (SS _) -> True
         balanced _ _ _ = FF
 
 strong_balance ::  STree a -> STree a
-strong_balance _ = undefined
+strong_balance t = foldavl foo emptyTree t
+    where
+        -- Check if tree is balanced with same method as is_balanced and if not
+        -- perform rotations until it is. Each branch will thus be a balanced tree
+        foo :: (Int, STree a) -> a -> (Int, STree a) -> (Int, STree a)
+
