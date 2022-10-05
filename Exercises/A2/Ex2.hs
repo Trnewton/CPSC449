@@ -61,6 +61,9 @@ head :: [a] -> a
 head [] = error "Error: empty list"
 head (a:as) = a
 
+sum :: (Num a) => [a] -> a
+sum = foldr (+) 0
+
 product :: (Num a) => [a] -> a
 product = foldl (*) 1
 
@@ -117,12 +120,6 @@ dmap :: (a -> b -> c) -> [a] -> [b] -> [c]
 dmap _ _ [] = []
 dmap _ [] _ = []
 dmap f (a:as) (b:bs) = (f a b):(dmap f as bs)
-
-dmap' f = foldr foo (\_ -> [])
-    where
-        foo a y b = case b of
-                        [] -> []
-                        (x:xs) -> (f a x):(y xs)
 
 -- Checks if all values of list are equal
 alleq :: (Eq a) => [a] -> a -> Bool
@@ -224,9 +221,15 @@ msort = mergeall . sequences
         ascending a as bs   = as [a]: sequences bs
 
 -- 6
+
+-- dmap :: (a -> b -> c) -> [a] -> [b] -> [c]
+-- dmap _ _ [] = []
+-- dmap _ [] _ = []
+-- dmap f (a:as) (b:bs) = (f a b):(dmap f as bs)
+
 dimension :: Matrix a -> (SF (Int,Int))
 dimension mat
-    | alleq dims (head dims)    = SS (dims !! 0, length dims) -- Make sure each row has same dim
+    | alleq dims (head dims)    = SS (length dims, dims !! 0) -- Make sure each row has same dim
     | otherwise                 = FF
     where dims = map length mat -- Get dim of each row
 
@@ -245,15 +248,21 @@ addMat m1 m2 = case (dimension m1, dimension m2) of
         | d1 == d2  -> SS (dmap (dmap (+)) m1 m2) -- Do actual addition
         | otherwise -> FF -- Bad
 
+-- TODO: #4 Clean this up
+-- TODO: #5 Improve efficiency
 multMat :: DoubleMatrix -> DoubleMatrix -> (SF DoubleMatrix)
 multMat m1 m2 = case (dimension m1, dimension m2) of
     -- Check that matrices are not bad
-    (SS (n1,m1), SS (n2,m2))
-    -- TODO: Are we row or column based?
-        | m1 == n2  -> SS [[]]--TODO: Make actually matrix mult
+    (SS (_,n1), SS (n2,_))
+        | n1 == n2  -> SS (multMat' m1 m2)
         | otherwise -> FF -- Bad
     _ -> FF
 
+multMat' :: DoubleMatrix -> DoubleMatrix -> DoubleMatrix
+multMat' m1 m2 = foldr foo [] m1
+    where
+        foo row newmat = (foldr (\col newrow -> (sum (dmap (*) row col)):newrow) [] m2t):newmat
+        m2t = case transpose m2 of FF -> [[]]; (SS m) -> m
 
 -- 7
 nreverse :: [a] -> [a]
@@ -297,7 +306,9 @@ foldrose f (RS a ts) = f a (map (foldrose f) ts)
 
 take :: Int -> [a] -> [a]
 take _ [] = []
-take n (a:as) = a : take (n-1) as
+take n (a:as)
+    | n == 0    = []
+    | otherwise = a : take (n-1) as
 
 -- TODO: #3 Make this not terrible
 maxk :: (Ord a) => [a] -> Int -> [a]
@@ -307,9 +318,11 @@ widthRose :: Integral a =>  Rose a -> Int
 widthRose t = snd (foldrose widthroot t)
     where
         widthroot _ [] = (0, 0)
-        widthroot _ cs = foldr foo (0, 0, 0) cs
-
-        foo (m1, m2, m)
+        widthroot _ cs = (1 + foldr max 0 branches, max path curWidth)
+            where
+                branches = maxk (map fst cs) 2
+                path = sum branches + length branches
+                curWidth = foldr max 0 (map snd cs)
 
 
 -- 11
@@ -324,11 +337,15 @@ is_ordered (Node lt@(Node _ la _) a rt@(Node _ ra _))   = (la < a) && (a < ra) &
 is_ordered _                                            = True
 
 is_balanced :: STree a -> Bool
-is_balanced Leaf = True -- If the root is a leaf we are done
-is_balanced (Node lt _ rt) = abs(ld - rd) <= 1
-    where -- use fold to get depths of each branch
-        ld = foldavl (\ld _ rd -> if ld >= rd then ld + 1 else rd + 1) 0 lt
-        rd = foldavl (\ld _ rd -> if ld >= rd then ld + 1 else rd + 1) 0 rt
+is_balanced tr = case status of (SS _) -> True
+                                _ -> False
+    where
+        status = foldavl balanced (SS 0) tr
+
+        balanced (SS ld) _ (SS rd)
+            | abs(ld - rd) <= 1 = (SS (1 + max ld rd))
+            | otherwise = FF
+        balanced _ _ _ = FF
 
 strong_balance ::  STree a -> STree a
 strong_balance _ = undefined
