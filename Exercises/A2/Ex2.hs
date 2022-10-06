@@ -29,13 +29,11 @@ import Debug.Trace
 
 
 -- General Useful Functions
-
--- My foldl with slightly bad typing
+-- These are mostly just standard function
 foldl :: (b -> a -> b) -> b -> [a] -> b
 foldl _ x [] = x
 foldl f x (y:ys) = (foldl f (f x y) ys)
 
--- My foldr with slightly bad typing
 foldr :: (a -> b -> b) -> b -> [a] -> b
 foldr _ x [] = x
 foldr f x (y:ys) = y `f` (foldr f x ys)
@@ -61,6 +59,13 @@ head :: [a] -> a
 head [] = error "Error: empty list"
 head (a:as) = a
 
+-- Takes first n elements of a list
+take :: Int -> [a] -> [a]
+take _ [] = []
+take n (a:as)
+    | n == 0    = []
+    | otherwise = a : take (n-1) as
+
 sum :: (Num a) => [a] -> a
 sum = foldr (+) 0
 
@@ -84,6 +89,14 @@ f . g = \x -> f (g x)
 id :: a -> a
 id a = a
 
+zip :: [a] -> [b] -> [(a,b)]
+zip [] _ = []
+zip _ [] = []
+zip (a:as) (b:bs) = (a,b):zip as bs
+
+uncurry :: (a -> b -> c) -> ((a,b) -> c)
+uncurry f (a,b) = f a b
+
 -- Q2 Auxillary
 isPrime :: Integer -> Bool
 isPrime n
@@ -91,7 +104,7 @@ isPrime n
     | n <= 1        = False
     | mod n 2 == 0  = False
     | otherwise     = isPrime' 3 n
-    where -- Perform brute force search all values less that root n with step size 2
+    where -- Perform brute force search of all values less that root n with step size 2
         isPrime' i n
             | i*i > n       = True
             | mod n i == 0  = False
@@ -104,7 +117,8 @@ merge [] bs = bs
 merge as [] = as
 merge at@(a:as) bt@(b:bs) = if a <= b then a:(merge as bt) else b:(merge at bs)
 
--- Merges a list of ordered lists
+-- Merges a list of ordered lists. Idea is we merge pairs of lists in our list
+-- then recurse.
 mergeall :: (Ord a) => [[a]] -> [a]
 mergeall []     = []
 mergeall [a]    = a
@@ -115,15 +129,18 @@ mergeall xs     = mergeall (mergeall' xs)
         mergeall' t         = t -- singleton and empty case
 
 -- Q6 Auxillary
--- Does map over two lists (similar to map f zip [a] [b])
+-- Does map over two lists
 dmap :: (a -> b -> c) -> [a] -> [b] -> [c]
-dmap _ _ [] = []
-dmap _ [] _ = []
-dmap f (a:as) (b:bs) = (f a b):(dmap f as bs)
+dmap f as bs = map (uncurry f) (zip as bs)
 
 -- Checks if all values of list are equal
 alleq :: (Eq a) => [a] -> a -> Bool
 alleq as a = foldl (\acc x -> acc && (x == a)) True as
+
+-- Q8 Auxillary
+foldexpr :: (f -> [c] -> c) -> (x -> c) -> (Expr f x) -> c
+foldexpr _ h (Var x) = h x
+foldexpr g h (Fun f as) = g f (map (foldexpr g h) as)
 
 -- Q9 Auxillary
 -- factorial from http://www.willamette.edu/~fruehr/haskell/evolution.html
@@ -131,13 +148,22 @@ fac :: (Integral n) => n -> n
 fac n = product [1..n]
 
 -- Q10 Auxillary
--- foldrose :: (a -> [b] -> b) -> Rose a -> b
--- foldrose f (RS a ts) = f a (map (foldrose f) ts)
+-- fold for rose tree by doing the fold thing
+foldrose :: (a -> [b] -> b) -> Rose a -> b
+foldrose f (RS a ts) = f a (map (foldrose f) ts)
 
+-- TODO: #3 Make this not terrible
+maxk :: (Ord a) => [a] -> Int -> [a]
+maxk as n = take n (hreverse (msort as))
+
+-- Q11 Auxillary
+foldavl :: (b -> a -> b -> b) -> b -> STree a -> b
+foldavl _ base Leaf = base
+foldavl f base (Node lt a rt) = f (foldavl f base lt) a (foldavl f base rt)
 
 
 -- 1
--- We do a fold because its cool...
+-- Try all pairs of Bools with a fold
 twoTautology :: ((Bool, Bool) -> Bool) -> Bool
 twoTautology f = foldl (\val pair -> (val && f pair)) True truth_pairs
     where truth_pairs = [(a,b) | a <- [True, False], b <- [True, False]]
@@ -149,6 +175,8 @@ twoEquiv f g = twoTautology (\pair -> ((f pair) == (g pair)))
 
 
 --2
+-- We use foldr to make a list of all values that break Fermat's conjecture and
+-- then take the first which works thanks to Haskells laziness
 badFermat :: Integer
 badFermat = (foldr (\n acc -> if isPrime (2^(2^n) + 1) then acc else n:acc) [] [1..]) !! 0
 
@@ -175,7 +203,7 @@ bisection f (a,b)
         bisection' f (a,b)
             -- If our function value is close to zero we cannot tell it is not zero
             | abs fc < e = SS c
-            -- If are interval bounds are too close we cannot proceed
+            -- If our interval bounds are too close we cannot proceed
             | (b - a) / 2 < e = FF
             -- Do the actual bisection step
             | signum fc == signum (f a) = bisection' f (c,b)
@@ -204,41 +232,41 @@ qsort (a:as) =
 -- The idea is that we split the list into increasing lists then merge which takes
 -- advantage of partial ordered sublists instead of spliting naively
 msort :: (Ord a) => [a] -> [a]
-msort = mergeall . sequences
+msort = mergeall . split
     where
         -- Creates list of increasing  lists
-        sequences (a:b:xs)
-            | a > b     = descending b [a] xs
-            | otherwise = ascending b (a:) xs
-        sequences xs = [xs] -- singleton and empty case
-        -- Creates increasing list for descending numbers
-        descending a as (b:bs)
-            | a > b         = descending b (a:as) bs
-        descending a as bs  = (a:as): sequences bs
-        -- Creates increasing list for ascending numbers
-        ascending a as (b:bs)
-            | a <= b        = ascending b (\ys -> as (a:ys)) bs
-        ascending a as bs   = as [a]: sequences bs
+        split (a:b:xs)
+            | a > b     = decreasing b [a] xs
+            | otherwise = increasing b (a:) xs
+        split xs = [xs] -- singleton and empty case
+        -- Creates increasing list for decreasing numbers
+        decreasing a as (b:bs)
+            | a > b         = decreasing b (a:as) bs
+        decreasing a as bs  = (a:as): split bs
+        -- Creates increasing list for increasing numbers
+        increasing a as (b:bs)
+            | a <= b        = increasing b (\ys -> as (a:ys)) bs
+        increasing a as bs   = as [a]: split bs
+
 
 -- 6
-
--- dmap :: (a -> b -> c) -> [a] -> [b] -> [c]
--- dmap _ _ [] = []
--- dmap _ [] _ = []
--- dmap f (a:as) (b:bs) = (f a b):(dmap f as bs)
-
+-- Get length of each row in matrix and make sure they agree then return our dims
 dimension :: Matrix a -> (SF (Int,Int))
 dimension mat
     | alleq dims (head dims)    = SS (length dims, dims !! 0) -- Make sure each row has same dim
     | otherwise                 = FF
     where dims = map length mat -- Get dim of each row
 
+-- We make an endless list of empty lists, then use our double map (dmap) function to
+-- add each element of each row (using a foldr) to one of the empty lists. Our
+-- very long list gets truncated by dmap.
 transpose :: Matrix a -> (SF (Matrix a))
 transpose mat = case dimension mat of
-    FF          -> FF
+    FF          -> FF -- Make sure mat is not ragged
     SS (n,m)    -> SS (foldr (dmap (:)) i mat)
         where i = []:i
 
+-- We can use our dmap function to map addition across both matrices.
 addMat :: DoubleMatrix -> DoubleMatrix -> (SF DoubleMatrix)
 addMat m1 m2 = case (dimension m1, dimension m2) of
     -- Check that matrices are not bad
@@ -246,25 +274,26 @@ addMat m1 m2 = case (dimension m1, dimension m2) of
     (_, FF) -> FF
     (d1, d2)
         | d1 == d2  -> SS (dmap (dmap (+)) m1 m2) -- Do actual addition
-        | otherwise -> FF -- Bad
+        | otherwise -> FF
 
--- TODO: #4 Clean this up
--- TODO: #5 Improve efficiency
 multMat :: DoubleMatrix -> DoubleMatrix -> (SF DoubleMatrix)
 multMat m1 m2 = case (dimension m1, dimension m2) of
     -- Check that matrices are not bad
     (SS (_,n1), SS (n2,_))
         | n1 == n2  -> SS (multMat' m1 m2)
-        | otherwise -> FF -- Bad
+        | otherwise -> FF
     _ -> FF
-
-multMat' :: DoubleMatrix -> DoubleMatrix -> DoubleMatrix
-multMat' m1 m2 = foldr foo [] m1
     where
-        foo row newmat = (foldr (\col newrow -> (sum (dmap (*) row col)):newrow) [] m2t):newmat
-        m2t = case transpose m2 of FF -> [[]]; (SS m) -> m
+        -- The function that does the actual matrix multiplication. Idea is we
+        -- can transpose the second matrix and then fold over both mats to create
+        -- the result.
+        multMat' m1 m2 = foldr dotprod [] m1
+            where
+                dotprod row newmat = (foldr (\col newrow -> (sum (dmap (*) row col)):newrow) [] m2t):newmat
+                m2t = case transpose m2 of FF -> [[]]; (SS m) -> m
 
 -- 7
+-- The naive way
 nreverse :: [a] -> [a]
 nreverse [] = []
 nreverse (a:as) = nreverse as ++ [a]
@@ -286,13 +315,15 @@ hreverse as = foldr (\a f -> (\x -> f(a:x))) id as []
 
 
 -- 8
--- Adds
-add_fst :: a -> ([a], b) -> ([a], b)
-add_fst a (as, b) = ((a:as), b)
-
+--
 all_paths :: Expr f x -> [([f],x)]
-all_paths (Var x) = [([],x)]
-all_paths (Fun f fs) = map (add_fst f) (foldl (\acc t -> acc ++ (all_paths t)) [] fs)
+all_paths = foldexpr (\f css -> foldr (\cs acc -> map (add_fst f) cs ++ acc) [] css) (\x -> [([], x)])
+    where
+        -- Appends element to list in first idx of tuple
+        add_fst a (as, b) = ((a:as), b)
+-- Could also use the foldless and pointy version below:
+-- all_paths (Var x) = [([],x)]
+-- all_paths (Fun f fs) = map (add_fst f) (foldl (\acc t -> acc ++ (all_paths t)) [] fs)
 
 
 -- 9
@@ -301,19 +332,6 @@ fact = fac 1891
 
 
 -- 10
-foldrose :: (a -> [b] -> b) -> Rose a -> b
-foldrose f (RS a ts) = f a (map (foldrose f) ts)
-
-take :: Int -> [a] -> [a]
-take _ [] = []
-take n (a:as)
-    | n == 0    = []
-    | otherwise = a : take (n-1) as
-
--- TODO: #3 Make this not terrible
-maxk :: (Ord a) => [a] -> Int -> [a]
-maxk as n = take n (hreverse (msort as))
-
 widthRose :: Integral a =>  Rose a -> Int
 widthRose t = snd (foldrose widthroot t)
     where
@@ -326,10 +344,6 @@ widthRose t = snd (foldrose widthroot t)
 
 
 -- 11
-foldavl :: (b -> a -> b -> b) -> b -> STree a -> b
-foldavl _ base Leaf = base
-foldavl f base (Node lt a rt) = f (foldavl f base lt) a (foldavl f base rt)
-
 -- TODO: #7 Simplify and cleanup is_ordered
 is_ordered :: (Ord a) => STree a -> Bool
 is_ordered t = case foldavl is_ordered' Bot t of UB -> False
@@ -354,6 +368,7 @@ is_ordered' (MinMax (_, lmax)) c (MinMax (rmin, _))
     | otherwise = MinMax (lmax, rmin)
 is_ordered' _ _ _ = UB
 
+--
 is_balanced :: STree a -> Bool
 is_balanced tr = case status of (SS _) -> True
                                 _ -> False
@@ -365,10 +380,22 @@ is_balanced tr = case status of (SS _) -> True
             | otherwise = FF
         balanced _ _ _ = FF
 
+-- Uses binary search tree rotations to balance an AVL tree. Works by balancing
+-- the current node then balancing subbranches. Rotation algos are derived from
+-- Introduction to Algorithms (3 ed). Cormen et al. The MIT Pres, 2009.
 strong_balance ::  STree a -> STree a
-strong_balance t = foldavl foo emptyTree t
+strong_balance Leaf = Leaf
+strong_balance t
+    -- Determine which, if any, branch is over burdened
+    | (dl - dr) > 1 = strong_balance(rot_right(t))
+    | (dr - dl) > 1 = strong_balance(rot_left(t))
+    | otherwise = (Node (strong_balance(lt)) a (strong_balance(rt)))
     where
-        -- Check if tree is balanced with same method as is_balanced and if not
-        -- perform rotations until it is. Each branch will thus be a balanced tree
-        foo :: (Int, STree a) -> a -> (Int, STree a) -> (Int, STree a)
-
+        (Node lt a rt) = t
+        dl = depth lt
+        dr = depth rt
+        -- Define function to find depth using fold
+        depth = foldavl (\ld _ rd -> 1 + max ld rd) 0
+        -- Define right and left rotations
+        rot_right (Node (Node llt al rlt) a rt) = (Node llt al (Node rlt a rt))
+        rot_left (Node lt a (Node lrt ar rrt)) = (Node (Node lt a lrt) ar rrt)

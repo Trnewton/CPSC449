@@ -128,7 +128,7 @@ grow lst = grow' lst 1
 instrictorder :: [Int] -> Bool
 instrictorder [] = True
 instrictorder [x] = True
-instrictorder (x:y:xs) = (x > y) && instrictorder xs
+instrictorder (x:y:xs) = (x > y) && instrictorder (y:xs)
 
 -- | Q8.
 expensive :: [(String, Int)] -> Int -> [String]
