@@ -412,7 +412,7 @@ strong_balance = balance
 --         rot_left (Node lt a (Node lrt ar rrt)) = (Node (Node lt a lrt) ar rrt)
 
 ordTree2List :: STree a -> [a]
-ordTree2List = foldavl (\ll a rl -> ll ++ [a] ++ rl) []
+ordTree2List = foldavl (\ll a rl -> (ordTree2List ll).(\x -> a:x).(ordTree2List rl)) id
 
 balance :: STree a -> STree a
 balance Leaf = Leaf
