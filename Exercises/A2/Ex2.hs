@@ -394,32 +394,17 @@ is_balanced tr = case status of (SS _) -> True
 -- the current node then balancing subbranches. Rotation algos are derived from
 -- Introduction to Algorithms (3 ed). Cormen et al. The MIT Pres, 2009.
 strong_balance ::  STree a -> STree a
-strong_balance = balance
--- strong_balance Leaf = Leaf
--- strong_balance t
---     -- Determine which, if any, branch is over burdened
---     | (dl - dr) > 1 = strong_balance(rot_right(t))
---     | (dr - dl) > 1 = strong_balance(rot_left(t))
---     | otherwise = (Node (strong_balance(lt)) a (strong_balance(rt)))
---     where
---         (Node lt a rt) = t
---         dl = depth lt
---         dr = depth rt
---         -- Define function to find depth using fold
---         depth = foldavl (\ld _ rd -> 1 + max ld rd) 0
---         -- Define right and left rotations
---         rot_right (Node (Node llt al rlt) a rt) = (Node llt al (Node rlt a rt))
---         rot_left (Node lt a (Node lrt ar rrt)) = (Node (Node lt a lrt) ar rrt)
+strong_balance = balance_1
 
-ordTree2List :: STree a -> [a]
-ordTree2List = foldavl (\ll a rl -> ll ++ [a] ++ rl) []
+ordTree2List :: (STree a) -> [a]
+ordTree2List t = (foldavl (\lt a rt -> (lt).(\x -> a:x).(rt)) id t) []
 
-balance :: STree a -> STree a
-balance Leaf = Leaf
-balance t = balance' (ordTree2List t)
+balance_1 :: STree a -> STree a
+balance_1 Leaf = Leaf
+balance_1 t = balance_1' (ordTree2List t)
     where
-        balance' [] = Leaf
-        balance' lst = (Node (balance' left) middle (balance' right))
+        balance_1' [] = Leaf
+        balance_1' lst = (Node (balance_1' left) middle (balance_1' right))
             where
                 middle = lst !! midIdx
                 midIdx = quot (length lst) 2
@@ -427,10 +412,10 @@ balance t = balance' (ordTree2List t)
                 right = drop (midIdx+1) lst
 
 
-numBelow :: STree a -> STree Int
-numBelow = foldavl numBelow' Leaf
-    where
-        numBelow' Leaf _ Leaf                           = (Node Leaf 0 Leaf)
-        numBelow' Leaf _ rt@(Node _ br _)               = (Node Leaf (br+1) rt)
-        numBelow' lt@(Node _ bl _) _ Leaf               = (Node lt (bl+1) Leaf)
-        numBelow' lt@(Node _ bl _) _ rt@(Node _ br _)   = (Node lt (bl+2+br) rt)
+-- numBelow :: STree a -> STree Int
+-- numBelow = foldavl numBelow' Leaf
+--     where
+--         numBelow' Leaf _ Leaf                           = (Node Leaf 0 Leaf)
+--         numBelow' Leaf _ rt@(Node _ br _)               = (Node Leaf (br+1) rt)
+--         numBelow' lt@(Node _ bl _) _ Leaf               = (Node lt (bl+1) Leaf)
+--         numBelow' lt@(Node _ bl _) _ rt@(Node _ br _)   = (Node lt (bl+2+br) rt)
