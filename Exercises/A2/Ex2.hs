@@ -338,21 +338,27 @@ fact = fac 1891
 
 
 -- 10
---
+-- We can fold over all nodes in our tree and seeing if we can add sub-branches
+-- of the node to generate a longer path than our current longest path.
 widthRose :: Integral a =>  Rose a -> Int
-widthRose t = snd (foldrose widthroot t)
+widthRose t = snd (foldrose widthroot t) -- Longest path is stored in second
     where
+        -- The tuples store (longest path through node, longest path see)
         widthroot _ [] = (0, 0)
+        -- Update.
         widthroot _ cs = (1 + foldr max 0 branches, max path curWidth)
             where
-                branches = maxk (map fst cs) 2
-                path = sum branches + length branches
-                curWidth = foldr max 0 (map snd cs)
+                branches = maxk (map fst cs) 2  -- Take the two largest sub-branchses
+                path = sum branches + length branches   -- Generate longest path through node
+                curWidth = foldr max 0 (map snd cs) -- Get the current longest path
 
 
 -- 11
 -- TODO: #7 Simplify and cleanup is_ordered
 is_ordered :: (Ord a) => STree a -> Bool
+
+is_ordered Leaf = Leaf
+
 is_ordered t = case foldavl is_ordered' Bot t of UB -> False
                                                  _ -> True
 
@@ -375,7 +381,7 @@ is_ordered' (MinMax (_, lmax)) c (MinMax (rmin, _))
     | otherwise = MinMax (lmax, rmin)
 is_ordered' _ _ _ = UB
 
---
+-- Uses SF to see if tree is balanced
 is_balanced :: STree a -> Bool
 is_balanced tr = case status of (SS _) -> True
                                 _ -> False
@@ -387,51 +393,61 @@ is_balanced tr = case status of (SS _) -> True
             | otherwise = FF
         balanced _ _ _ = FF
 
--- TODO: Make auxillary depth_tree function that'll make an tree with the depths
--- of the orignial tree as nodes so that we can efficiently check new depths
 
--- Uses binary search tree rotations to balance an AVL tree. Works by balancing
--- the current node then balancing subbranches. Rotation algos are derived from
--- Introduction to Algorithms (3 ed). Cormen et al. The MIT Pres, 2009.
+
 strong_balance ::  STree a -> STree a
-strong_balance = balance
--- strong_balance Leaf = Leaf
--- strong_balance t
---     -- Determine which, if any, branch is over burdened
---     | (dl - dr) > 1 = strong_balance(rot_right(t))
---     | (dr - dl) > 1 = strong_balance(rot_left(t))
---     | otherwise = (Node (strong_balance(lt)) a (strong_balance(rt)))
---     where
---         (Node lt a rt) = t
---         dl = depth lt
---         dr = depth rt
---         -- Define function to find depth using fold
---         depth = foldavl (\ld _ rd -> 1 + max ld rd) 0
---         -- Define right and left rotations
---         rot_right (Node (Node llt al rlt) a rt) = (Node llt al (Node rlt a rt))
---         rot_left (Node lt a (Node lrt ar rrt)) = (Node (Node lt a lrt) ar rrt)
+strong_balance = balance_2
 
-ordTree2List :: STree a -> [a]
-ordTree2List = foldavl (\ll a rl -> (ordTree2List ll).(\x -> a:x).(ordTree2List rl) ) id
+-- Turns binary tree into ordered list
+ordTree2List :: (STree a) -> [a]
+ordTree2List t = (foldavl (\lt a rt -> (lt).(\x -> a:x).(rt)) id t) []
 
-balance :: STree a -> STree a
-balance Leaf = Leaf
-balance t = balance' (ordTree2List t)
+-- We can break up an ordered binary tree into an ordered list in O(n) time then
+-- build it backup into a balanced binary tree in O(n) time.
+balance_1 :: STree a -> STree a
+balance_1 Leaf = Leaf
+balance_1 t = balance_1' (ordTree2List t)
     where
-        balance' [] = Leaf
-        balance' lst = (Node (balance' left) middle (balance' right))
+        -- Build tree up again
+        balance_1' [] = Leaf
+        balance_1' lst = (Node (balance_1' left) middle (balance_1' right))
             where
+                -- Get left middle and right of list and make into nodes or subtrees
                 middle = lst !! midIdx
                 midIdx = quot (length lst) 2
                 left = take midIdx lst
                 right = drop (midIdx+1) lst
 
+-- Rotates root of tree left
+rotateLeft :: STree a -> STree a
+rotateLeft (Node lt a (Node lrt ar rrt)) = (Node (Node lt a lrt) ar rrt)
+rotateLeft tr = tr
 
+-- Rotates root of tree right
+rotateRight :: STree a -> STree a
+rotateRight (Node (Node llt al rlt) a rt) = (Node llt al (Node rlt a rt))
+rotateRight tr = tr
 
-numBelow :: STree a -> STree Int
-numBelow = foldavl numBelow' Leaf
+-- Uses binary search tree rotations to balance an AVL tree. Works by balancing
+-- the current node then balancing subbranches. Rotation algos are derived from
+-- Introduction to Algorithms (3 ed). Cormen et al. The MIT Pres, 2009.
+balance_2 :: STree a -> STree a
+balance_2 Leaf = Leaf
+balance_2 tr = (Node (balance_2 lt) a (balance_2 rt))
     where
-        numBelow' Leaf _ Leaf                           = (Node Leaf 0 Leaf)
-        numBelow' Leaf _ rt@(Node _ br _)               = (Node Leaf (br+1) rt)
-        numBelow' lt@(Node _ bl _) _ Leaf               = (Node lt (bl+1) Leaf)
-        numBelow' lt@(Node _ bl _) _ rt@(Node _ br _)   = (Node lt (bl+2+br) rt)
+        (Node lt a rt) = balance_2' tr (0,0)
+        balance_2' tr@(Node lt a rt) lr
+            | abs (big - sml) <=1    = tr -- Found center
+            | big > sml              = rotateLeft (Node lt a (balance_2' rt (lr `tp` (sml+1,0)))) -- Look down right
+            | otherwise              = rotateRight (Node (balance_2' lt (lr `tp` (0,big+1))) a rt) -- Look down left
+            where
+                (sml, big) = (numNodes lt, numNodes rt ) `tp` lr
+
+-- Adds two tuples of numbers
+tp :: (Num a, Num b) => (a,b) -> (a,b) -> (a,b)
+tp (a1,b1) (a2,b2) = (a1+a2,b1+b2)
+
+-- Counts nodes in a tree
+numNodes :: STree a -> Int
+numNodes tr = foldavl (\lf _ rf -> (\x -> lf x + 1 + rf x)) id tr 0
+
