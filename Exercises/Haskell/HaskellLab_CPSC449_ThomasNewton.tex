@@ -1,0 +1,132 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry} 
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{enumerate}
+\usepackage{amssymb, amsmath, amsfonts, amsthm, mathtools}
+\usepackage{graphicx}
+
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\newcommand{\reff}[1]{(\ref{#1})}
+\newcommand{\Mod}[1]{\ (\mathrm{mod}\ #1)}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\gen}[1]{\langle#1\rangle}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+\newtheoremstyle{problemstyle}  % <name>
+	{3pt}                                               % <space above>
+	{3pt}                                               % <space below>
+	{\normalfont}                               % <body font>
+	{}                                                  % <indent amount}
+	{\bfseries}                 % <theorem head font>
+	{\normalfont\bfseries.}         % <punctuation after theorem head>
+	{.5em}                                          % <space after theorem head>
+	{}                                                  % <theorem head spec (can be left empty, meaning `normal')>
+\theoremstyle{problemstyle}
+
+\newtheorem{problem}{Problem}%[section]
+
+\DeclareMathOperator{\lcm}{lcm}
+
+
+%opening
+\pagestyle{fancyplain}
+\title{}
+\author{Thomas Newton \\30029307}
+\date{Due: 12:00 pm 18 October 2022}
+\lhead{CPSC 449: Fall 2022}
+\rhead{\textbf{Thomas Newton}}
+\cfoot{}
+
+\begin{document}
+\maketitle
+\newpage
+
+\begin{problem} % 1
+	$ $
+\begin{align*}
+	&\text{ maxb } 100\, [5,122,101,32,19] ?\\
+	&|\text{ maxb } 100\, [5,122,101,32,19] := \text{ maxb top } [5,122,101,32,19]\\
+	&\hspace{20pt} ... \text{match} [\text{top}:=100]\\
+	&|\hspace{5pt} = \text{ foldr compare FF } [5,122,101,32,19]?\\
+	&|\hspace{5pt}|\text{ foldr compare FF } [5,122,101,32,19]\\
+	&\hspace{10pt} := \text{ foldr f b []}\\
+	&\hspace{30pt} \text{...match fails} \\
+	&\hspace{10pt} := \text{ foldr f b (x:xs)}\\
+	&\hspace{30pt} \text{...match } [\text{f}:=\text{compare},\text{b}:=\text{FF},\text{x}:=5,\text{xs}:=[122,101,32,19]]\\
+	&|\hspace{5pt}|=\text{ f x (foldr f b xs) } [\text{f}:=\text{compare},\text{b}:=\text{FF},\text{x}:=5,\text{xs}:=[122,101,32,19]]?\\
+	&|\hspace{5pt}|\hspace{5pt}| \text{ compare }5\, (\text{ foldr compare FF } [122,101,32,19])\\
+	&|\hspace{5pt}|\hspace{5pt}|:=\text{compare m v}\\
+	& \hspace{30pt}\text{...match } [\text{m}:=5,\text{v}:=(\text{foldr compare FF } [122,101,32,19])]\\
+	&|\hspace{5pt}|\hspace{5pt}|\text{ m } >= \text{ top } [\text{m:=5, n:=100}] = 5 >=100\\
+	& \hspace{30pt} \text{...false}\\
+	&|\hspace{5pt}|\hspace{5pt}|\, \text{otherwise}\\
+	& \hspace{30pt} \text{...true}\\
+	&|\hspace{5pt}|\hspace{5pt}|\, = \text{ssmax m v} [\text{m}:=5,\text{v}:=(\text{foldr compare FF } [122,101,32,19])]?\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\text{ ssmax } 5\, (\text{foldr compare FF } [122,101,32,19])\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|:= \text{ssmax m }(\text{SS n})\\
+	&\hspace{30pt} \text{... forces evaluation}\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\text{ foldr compare FF }
+	 [122,101,32,19]?\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|:=\text{ foldr f b }(\text{x:xs})\\
+	&\hspace{30pt} \text{... match }[\text{f:=compare, b:=FF, x=122, xs:=[101, 32, 19]}]\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\text{ compare 122 (foldr compare FF [101, 32, 19])}\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|:= \text{ compare m v}\\
+	&\hspace{30pt} \text{... match }[\text{m:=122, v:=(foldr compare FF [101, 32, 19])}]\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\text{ m } >= \text{ top } [\text{m:=122, n:=100}] =122 >= 100\\
+	& \hspace{30pt} \text{...true}\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\, = \text{ SS 100}\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|:= \text{ssmax m }(\text{SS n})\\
+	&\hspace{30pt} \text{...match } [\text{m:=5, (SS n):= (SS 100)}]\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}| = \text{ SS (max m n) } [\text{m:=5, n:=100}]\\
+	&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\text{ SS (max 5 100) }\\
+		&|\hspace{5pt}|\hspace{5pt}|\hspace{5pt}|\text{ SS 100}\\
+	&|\hspace{5pt}|\text{ SS 100}\\
+	&|\text{ SS 100}\\
+\end{align*}
+\end{problem}
+
+\newpage
+\setcounter{problem}{5}
+\begin{problem} % 6
+$ $
+
+Let $f$ and $g$ be functions with appropriate typing.
+
+\noindent 
+\textbf{Base Case:} 
+For the base case of $\text{tip}$ we have
+\begin{align*}
+	\text{mapST g (mapST f Tip)} & = \text{mapST g Tip}\\
+	& = \text{Tip} \\
+	& = \text{mapST (g.f) Tip}
+\end{align*}
+
+\noindent
+\textbf{Inductive Step:} 
+Let $\text{t = (SNode t1 a t2)}$ be a STree and assume for any smaller STree the property holds. If we note that $t1$ and $t2$ are smaller than $t$ and therefore satisfy the property, we can compute
+\begin{align*}
+	\text{mapST g (\text{mapST} f t)} & = \text{mapST g (\text{mapST} f (SNode t1 a t2)}\\
+	& = \text{mapST g (SNode (mapST f t1) (f a) (mapST f t2))}\\
+	& = \text{SNode (mapST g (mapST f t1)) (g (f a)) (mapST g (mapST f t2))}\\
+	& = \text{SNode (mapST (g.f) t1) ((g.f) a) (mapST (g.f) t2)}\\
+	& = \text{mapST (g.f) (SNode t1 a t2)}\\
+	& = \text{mapST (g.f) t}
+\end{align*}
+thus we are done.
+
+\end{problem}
+\end{document}
+
+
+
+
+
+
+
+
+
+
+

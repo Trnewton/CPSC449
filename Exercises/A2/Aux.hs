@@ -38,7 +38,6 @@ numBelow = foldavl numBelow' Leaf
         numBelow' lt@(Node _ bl _) _ Leaf               = (Node lt (bl+1) Leaf)
         numBelow' lt@(Node _ bl _) _ rt@(Node _ br _)   = (Node lt (bl+2+br) rt)
 
---
 data STree a
     = Node (STree a) a (STree a)
     | Leaf

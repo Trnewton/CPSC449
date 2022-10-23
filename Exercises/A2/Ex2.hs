@@ -354,32 +354,23 @@ widthRose t = snd (foldrose widthroot t) -- Longest path is stored in second
 
 
 -- 11
--- TODO: #7 Simplify and cleanup is_ordered
+-- We can use higher order folds to check the ordering at each node level while
+-- avoiding unpleasantries of the leaves, and everything works efficiently thanks
+-- to laziness!
+is_ordered_bad :: (Ord a) => STree a -> Bool
+is_ordered_bad tr@(Node _ a _) = both ((foldavl order (\_ -> (True, True)) tr ) a)
+    where
+        order lf a rf = (\x -> ((a <= x) && ordBelow, (x <= a) && ordBelow))
+            where
+                ordBelow = fst (lf a) && snd (rf a)
+        both (a,b) = a && b
+
 is_ordered :: (Ord a) => STree a -> Bool
+is_ordered Leaf = True
+is_ordered tr = is_ordered' tr
+    where
+        is_ordered'
 
-is_ordered Leaf = Leaf
-
-is_ordered t = case foldavl is_ordered' Bot t of UB -> False
-                                                 _ -> True
-
-data Fkleaf a
-    = MinMax (a,a)
-    | Bot
-    | UB
-
-is_ordered' :: (Ord a) => Fkleaf a -> a -> Fkleaf a -> Fkleaf a
-is_ordered' Bot c Bot = MinMax (c,c)
-is_ordered' Bot c (MinMax (rmin, _))
-    | rmin < c = UB
-    | otherwise = MinMax (c, rmin)
-is_ordered' (MinMax (_, lmax)) c Bot
-    | c < lmax = UB
-    | otherwise = MinMax (lmax, c)
-is_ordered' (MinMax (_, lmax)) c (MinMax (rmin, _))
-    | c < lmax = UB
-    | rmin < c = UB
-    | otherwise = MinMax (lmax, rmin)
-is_ordered' _ _ _ = UB
 
 -- Uses SF to see if tree is balanced
 is_balanced :: STree a -> Bool
@@ -389,9 +380,10 @@ is_balanced tr = case status of (SS _) -> True
         status = foldavl balanced (SS 0) tr
 
         balanced (SS ld) _ (SS rd)
+            -- Do the balance check, it it fails we bubble up a failure
             | abs(ld - rd) <= 1 = (SS (1 + max ld rd))
-            | otherwise = FF
-        balanced _ _ _ = FF
+            | otherwise         = FF
+        balanced _ _ _          = FF
 
 
 
@@ -430,7 +422,9 @@ rotateRight tr = tr
 
 -- Uses binary search tree rotations to balance an AVL tree. Works by balancing
 -- the current node then balancing subbranches. Rotation algos are derived from
--- Introduction to Algorithms (3 ed). Cormen et al. The MIT Pres, 2009.
+-- Introduction to Algorithms (3 ed). Cormen et al. The MIT Pres, 2009. Is currently
+-- not the most efficient in terms of operations but should be efficient in terms
+-- of number of rotations.
 balance_2 :: STree a -> STree a
 balance_2 Leaf = Leaf
 balance_2 tr = (Node (balance_2 lt) a (balance_2 rt))
