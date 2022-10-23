@@ -8,15 +8,17 @@ onboard (x,y) = (x < 8) && (0 <= x) && (y < 8) && (0 <= y)
 
 notRepeat :: [Move] -> GameState -> Bool
 notRepeat m@[(K (x1,y1)),(K (x2,y2))] st -- We only need to check simple king moves
-    | abs (x1-x2) + $ abs (y1-y2) == 2 = notRepeat' ([], [m]) (history st)
-    | otherwise                     = True
+    | abs (x1-x2) + $ abs (y1-y2) == 2  = notRepeat' ([], [m]) (history st)
+    | otherwise                         = True
     where
-        -- TODO: Once we find a non-simple king move we can leave
-        notRepeat' _ [] = True
-        notRepeat' (ls, rs) (lst@[]:hist) = case (ls', rs) of    ([], []) -> False
-                                                                _ -> notRepeat' (rs, ls')
+        -- Look back into history to see
+        notRepeat' (ls, rs) (lst@[(K (x1,y1)), (K (x2,y2))]:hist)
+            | abs (x1-x2) + $ abs (y1-y2) == 2 = case (ls', rs) of ([], []) -> False
+                                                                          _ -> notRepeat' (rs, ls') hist
+            | otherwise = False
+        notRepeat' _ _ = True
             where
-                ls' = reduceCycles lstST ls
+                ls' = reduceCycles ls tST ls
 
         reduceCycles :: Move -> [Move] -> SF [Move]
         reduceCycles _ [] = SS []
