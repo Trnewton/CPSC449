@@ -6,6 +6,8 @@ import qualified Data.Set as Set
 onboard :: Coord -> Bool
 onboard (x,y) = (x < 8) && (0 <= x) && (y < 8) && (0 <= y)
 
+-- TODO: Clean this up, might also be able to make more efficient by doing cycle
+-- detection all in one instead of at each past state
 notRepeat :: [Move] -> GameState -> Bool
 notRepeat m@[(K (x1,y1)),(K (x2,y2))] st -- We only need to check simple king moves
     | abs (x1-x2) + $ abs (y1-y2) == 2  = notRepeat' ([], [m]) (history st)
@@ -18,12 +20,29 @@ notRepeat m@[(K (x1,y1)),(K (x2,y2))] st -- We only need to check simple king mo
             | otherwise = False
         notRepeat' _ _ = True
             where
-                ls' = reduceCycles ls tST ls
+                ls' = reduceCycles lst ls
 
-        reduceCycles :: Move -> [Move] -> SF [Move]
-        reduceCycles _ [] = SS []
-        reduceCycles (_,x1,y1) ([]:ss) =
-
+        -- TODO: This requires alot of cleaning
+        reduceCycles' :: Move -> [Move] -> [Move]
+        reduceCycles _ _ [] = []
+        reduceCycles mv@[_ start, _ nxt] ms =
+            case reduceCycles' start nxt ms of  SS ms' -> ms'
+                                                FF -> mv:ms
+            where
+                -- TODO: Make this into a foldr
+                -- We already know that all the moves at this point are simple
+                -- king moves. As we go deeper into the move trace we can add moves
+                -- to the possible cycle if they start at the current end of the
+                -- possible cycle. We then know we've found a cycle with a SS
+                reduceCycles' :: Coord -> Coord -> [Move] -> SF [Move]
+                reduceCycles' _ _ [] = FF []
+                reduceCycles' (xs,ys) (x,y) (mv@[(_ (x1, y1), (_ (x2, y2)))]:ms)
+                    | (x==x1) && (y==y1) =
+                        if ((xs==x2)&&(ys=y2)) then SS ms else
+                            (case reduceCycles' (xs,ys) (x,y) ms of SS ms' -> ms'
+                                                                    FF -> FF)
+                    | otherwise = case reduceCycles' (xs,ys) (x,y) ms of    SS ms' -> mv:ms'
+                                                                            FF -> FF
 notRepeat _ _ = True
 
 moves :: GameState -> (SMorJM [Move])
