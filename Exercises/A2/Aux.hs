@@ -37,3 +37,31 @@ numBelow = foldavl numBelow' Leaf
         numBelow' Leaf _ rt@(Node _ br _)               = (Node Leaf (br+1) rt)
         numBelow' lt@(Node _ bl _) _ Leaf               = (Node lt (bl+1) Leaf)
         numBelow' lt@(Node _ bl _) _ rt@(Node _ br _)   = (Node lt (bl+2+br) rt)
+
+--
+data STree a
+    = Node (STree a) a (STree a)
+    | Leaf
+  deriving (Show, Eq, Ord, Read)
+
+foldavl :: (b -> a -> b -> b) -> b -> STree a -> b
+foldavl _ base Leaf = base
+foldavl f base (Node lt a rt) = f (foldavl f base lt) a (foldavl f base rt)
+
+
+--io = foldavl g (
+data M a = M a | N
+  deriving Eq
+
+instance Ord a => Ord (M a)
+  where
+    N <= _ = True
+    (M a) <= N = False
+    (M a) <= (M b) = a <= b
+
+
+orderp :: (Ord a) => STree a -> Bool
+orderp = snd . (foldavl g (N, False))
+  where
+    g a b c = k c $ k (M b,True) a
+    k (a,b) (c,d) = (max a c, foldr (&&) True [b,d,a>c])
