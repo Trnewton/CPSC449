@@ -4,8 +4,9 @@ import Checkers.Types
 --------------------------------------------------------------------------------------
 --                     Imports you will need to develop
 --------------------------------------------------------------------------------------
--- import Checkers.Moves
--- import Checkers.ApplyMove
+import Checkers.Moves
+import Checkers.ApplyMove
+import Checkers.Tests
 -- import AI.ABsearch
 --------------------------------------------------------------------------------------
 --                     Standard library imports:
@@ -20,15 +21,15 @@ import Text.Read
 
 main :: IO ()
 main = do -- the Human on Human game configuration
-     hSetBuffering stdin LineBuffering
-     runGame $ GameConfig { movemaker = apply_move
-                          , blackMove = Human
-                          , redMove = Human
-                          , state = initialGameState}
+        hSetBuffering stdin LineBuffering
+        print rep2
+        print (show (moves rep1))
 
--- a stub for apply_move
-apply_move:: Move -> GameState -> GameState
-apply_move _ g = g
+        -- runGame $ GameConfig { movemaker = apply_move
+        --                     , blackMove = Human
+        --                     , redMove = Human
+        --                     , state = jump1}
+
 
 {-   Example of configurations for games:
 
@@ -81,31 +82,6 @@ runGame g = case (currentMove g) of
       BlackPlayer -> Just (blackMove conf)
       GameOver -> Nothing
 
---Some test states ...
-
-test1 = GameState { blackPieces = []
-                  , redPieces = []
-                  , blackKings = [(0,1)]
-                  , redKings = [(0,3),(2,3)]
-                  , status = RedPlayer
-                  , message = ""
-                  , history = []}
-
-test2 = GameState { blackPieces = []
-                  , redPieces = []
-                  , blackKings = [(6,3),(4,3)]
-                  , redKings = [(0,1)]
-                  , status = RedPlayer
-                  , message = ""
-                  , history = []}
-
-test3 =  GameState { blackPieces = []
-                  , redPieces = [(6,5)]
-                  , blackKings = [(6,3),(4,3)]
-                  , redKings = [(0,1),(0,5)]
-                  , status = RedPlayer
-                  , message = ""
-                  , history = []}
 
 
 

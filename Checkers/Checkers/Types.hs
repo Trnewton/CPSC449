@@ -3,8 +3,6 @@ module Checkers.Types where
 import Data.Maybe
 
 
-type SF a = SS a | FF a
-
 --  A coordinate represents a square on the board, it is a pair of integers (x,y).
 --  The board is 0-indexed, where (_,0) is the top row of the board, and (0,_) is
 --  the leftmost column.
