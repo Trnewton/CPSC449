@@ -2,6 +2,7 @@ module Checkers.ApplyMove where
 
 import Checkers.Moves
 import Checkers.Types
+import Checkers.Utilities
 
 import Data.List
 
@@ -15,23 +16,21 @@ import Data.List
 
 apply_move:: Move -> GameState -> GameState
 apply_move mv st
-    | elem mv posMoves = apply_move' mv st  { history = mv:(history st)
+    |elem mv posMoves = apply_move' mv st   { history = mv:(history st)
                                             , message = ""}
-    | otherwise = st{message=("Bad move.")}
+    |otherwise = st{ message=("Bad move.") }
     where
         posMoves = case moves st of SM mvs -> mvs ; JM mvs -> mvs ; EndM -> []
+
         -- Determine if we have a simple or jump move
         apply_move' mv@[p1, p2] st
-            | (abs (x1-x2)) + (abs (y1-y2)) == 2    = make_simple_move mv st
-            | otherwise                             = make_jump_move mv st
-            where
-                (x1,y1) = case p1 of (P (x,y)) -> (x,y) ; (K (x,y)) -> (x,y)
-                (x2,y2) = case p2 of (P (x,y)) -> (x,y) ; (K (x,y)) -> (x,y)
+            |isSimp (unPorK p1) (unPorK p2) = make_simple_move mv st
+            |otherwise                      = make_jump_move mv st
         apply_move' mv st = make_jump_move mv st
 
         -- Update state for simple move
         make_simple_move [p1, p2] st
-            | status st == BlackPlayer = -- We are movning a black piece
+            |status st == BlackPlayer = -- We are movning a black piece
                 (let st' = case p1 of -- Remove first coord of move
                             (P s) -> st{blackPieces = (delete s (blackPieces st)) }
                             (K s) -> st{blackKings = (delete s (blackKings st)) }
@@ -40,7 +39,7 @@ apply_move mv st
                     (K s) -> st'{blackKings = s:(blackKings st')}){
                         status = RedPlayer
                     }
-            | otherwise = -- We are movning a red piece
+            |otherwise = -- We are movning a red piece
                 (let st' = case p1 of -- Remove first coord of move
                             (P s) -> st{redPieces = (delete s (redPieces st)) }
                             (K s) -> st{redKings = (delete s (redKings st)) }
@@ -52,31 +51,27 @@ apply_move mv st
 
         -- Update state for jump move
         make_jump_move mvs@(p:_) st
-            | status st == BlackPlayer = -- We are movning a black piece
-                (let st' = case p of -- Remove first coord of move and captures
-                            (P s) -> st{blackPieces = (delete s (blackPieces st))
-                                    , redPieces = (redPieces st \\ rem)
-                                    , redKings = (redKings st \\ rem)}
-                            (K s) -> st{blackKings = (delete s (blackKings st))
-                                    , redPieces = (redPieces st \\ rem)
-                                    , redKings = (redKings st \\ rem)}
+            |status st == BlackPlayer = -- We are movning a black piece
+                (let st' = case p of -- Remove first coord of move
+                            (P s) -> st{ blackPieces = (delete s (blackPieces st)) }
+                            (K s) -> st{ blackKings = (delete s (blackKings st)) }
                 in case p2 of -- Add coordinate of last move
-                    (P s) -> st'{blackPieces = s:(blackPieces st')}
-                    (K s) -> st'{blackKings = s:(blackKings st')}){
-                        status = RedPlayer
+                    (P s) -> st'{ blackPieces = s:(blackPieces st') }
+                    (K s) -> st'{ blackKings = s:(blackKings st') }){
+                        status = RedPlayer,
+                        redPieces = (redPieces st \\ rem),
+                        redKings = (redKings st \\ rem)
                     }
-            | otherwise = -- We are movning a red piece
-                (let st' = case p of -- Remove first coord of move and captures
-                            (P s) -> st{redPieces = (delete s (redPieces st))
-                                , blackPieces = (blackPieces st \\ rem)
-                                , blackKings = (blackKings st \\ rem)}
-                            (K s) -> st{redKings = (delete s (redKings st))
-                                , blackPieces = (blackPieces st \\ rem)
-                                , blackKings = (blackKings st \\ rem)}
+            |otherwise = -- We are movning a red piece
+                (let st' = case p of -- Remove first coord of move
+                            (P s) -> st{ redPieces = (delete s (redPieces st)) }
+                            (K s) -> st{ redKings = (delete s (redKings st)) }
                 in case p2 of -- Add coordinate of last move
-                    (P s) -> st'{redPieces = s:(redPieces st')}
-                    (K s) -> st'{redKings = s:(redKings st')}){
-                        status = BlackPlayer
+                    (P s) -> st'{ redPieces = s:(redPieces st') }
+                    (K s) -> st'{ redKings = s:(redKings st') }){
+                        status = BlackPlayer,
+                        blackPieces = (blackPieces st \\ rem),
+                        blackKings = (blackKings st \\ rem)
                     }
             where
                 -- Compute captues and get last coord of moving piece
@@ -87,5 +82,5 @@ apply_move mv st
                     where
                         (caps, end) = make_jump_move' (c2:cs) st
                         cap = (quot (x1 + x2) 2, quot (y1 + y2) 2)
-                        (x1,y1) = case c1 of (P (x,y)) -> (x,y) ; (K (x,y)) -> (x,y)
-                        (x2,y2) = case c2 of (P (x,y)) -> (x,y) ; (K (x,y)) -> (x,y)
+                        (x1,y1) = unPorK c1
+                        (x2,y2) = unPorK c2

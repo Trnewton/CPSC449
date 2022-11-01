@@ -354,6 +354,9 @@ widthRose t = snd (foldrose widthroot t) -- Longest path is stored in second
 
 
 -- 11
+datas Value a = Bot | Val a | Top
+    deriving (Show, Eq, Ord)
+
 -- We can use higher order folds to check the ordering at each node level while
 -- avoiding unpleasantries of the leaves, and everything works efficiently thanks
 -- to laziness!
