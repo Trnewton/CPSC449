@@ -8,11 +8,11 @@ data Player = Red | Black
     deriving (Show, Eq)
 
 -- Checking and Computation
--- Checks if peice is on 8x8 board
+-- | Checks if peice is on 8x8 board
 onboard :: Coord -> Bool
 onboard (x,y) = (x < 8) && (0 <= x) && (y < 8) && (0 <= y)
 
--- Computes Euclidean distance between two coordinates
+-- | Computes Euclidean distance between two coordinates
 distance :: Coord -> Coord -> Int
 distance (x1,y1) (x2,y2) = (abs (x1-x2)) + (abs (y1-y2))
 

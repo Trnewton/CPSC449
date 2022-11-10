@@ -14,11 +14,12 @@ import Data.List
 ------------------------------------------------
 ------------------------------------------------
 
+-- | Updates checkers game state in accordance with a given move,
 apply_move:: Move -> GameState -> GameState
 apply_move mv st
     |posMoves == EndM = st{ message = "Game Over.", status = GameOver }
     |isMove mv posMoves =
-        (case posMoves of -- Determine if we have a simple or jump move
+        (case posMoves of  -- Determine if we have a simple or jump move
             SM _ -> make_simple_move mv st
             JM _ -> make_jump_move mv st)
             { history = mv:(history st), message = "" }
@@ -31,20 +32,20 @@ apply_move mv st
         isMove :: Move -> SMorJM [Move] -> Bool
         isMove mv (SM mvs) = elem mv mvs
         isMove mv (JM mvs) = elem mv mvs
-        isMove _ _ = False -- if EndM
+        isMove _ _ = False  -- if EndM
 
         -- Update state for simple move
         make_simple_move :: Move -> GameState -> GameState
         make_simple_move [p1, p2] st
-            |status st == BlackPlayer = -- We are moving a black piece
+            |status st == BlackPlayer =  -- We are moving a black piece
                 (addPeice p2 Black (deletePeice p1 Black st)){ status = RedPlayer }
-            |otherwise = -- We are moving a red piece
+            |otherwise =  -- We are moving a red piece
                 (addPeice p2 Red (deletePeice p1 Red st)){ status = BlackPlayer }
 
         -- Update state for jump move
         make_jump_move :: Move -> GameState -> GameState
         make_jump_move mvs@(p1:_) st
-            |status st == BlackPlayer = -- We are moving a black piece
+            |status st == BlackPlayer =  -- We are moving a black piece
                 (addPeice p2 Black (deletePeice p1 Black st)){
                         status = RedPlayer,
                         -- Remove captured peices
