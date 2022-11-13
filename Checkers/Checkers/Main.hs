@@ -22,13 +22,10 @@ import Text.Read
 main :: IO ()
 main = do -- the Human on Human game configuration
         hSetBuffering stdin LineBuffering
-        print rep2
-        print (show (moves rep1))
-
-        -- runGame $ GameConfig { movemaker = apply_move
-        --                     , blackMove = Human
-        --                     , redMove = Human
-        --                     , state = jump1}
+        runGame $ GameConfig { movemaker = apply_move
+                            , blackMove = Human
+                            , redMove = Human
+                            , state = jump1}
 
 
 {-   Example of configurations for games:

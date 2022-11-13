@@ -16,7 +16,7 @@ type PieceState = [Coord]
 --  The list is "in the right order", e.g. [firstSquare, secondSquare, ...]
 
 data PorK a = P a | K a
-  deriving (Show,Eq, Read)
+  deriving (Show, Eq, Read)
 
 type Move = [PorK Coord]
 
