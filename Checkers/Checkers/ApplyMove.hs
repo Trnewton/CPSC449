@@ -17,7 +17,8 @@ import Data.List
 -- | Updates checkers game state in accordance with a given move,
 apply_move:: Move -> GameState -> GameState
 apply_move mv st
-    |posMoves == EndM = st{ message = "Game Over.", status = GameOver }
+    |posMoves == EndM = st  { message = "Game Over " ++ (if (status st)==RedPlayer then "Black" else "Red" ) ++ " Wins."
+                            , status = GameOver }
     |isMove mv posMoves =
         (case posMoves of  -- Determine if we have a simple or jump move
             SM _ -> make_simple_move mv st

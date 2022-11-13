@@ -3,24 +3,28 @@ module AI.ABTypes where
 import Checkers.Types
 
 
-data Value a = Bot | Val a | Top
+data Value a
+    -- | Bottom value
+    = Bot
+    -- | Values between bottom and top
+    | Val a
+    -- | Top value
+    | Top
     deriving(Show, Eq, Ord)
 
-data MinMax a = BranchMin a [MaxMin a]
+data MinMax a
+    -- | Tip of minmax tree with state evaluation
+    =  TipMin a
+    -- | Bracnh of minmax tree
+    | BranchMin [MaxMin a]
     deriving (Show, Eq)
 
-data MaxMin a = BranchMax a [MinMax a]
+data MaxMin a
+    -- | Tip of maxmin tree with state evaluation
+    = TipMax a
+    -- | Branch of maxmin tree
+    | BranchMax [MinMax a]
     deriving (Show, Eq)
 
 type Ply = Int
-
-data StateEval =
-        StateEval   { gamestate :: GameState
-                    , eval :: (Value Int) }
-        deriving (Show)
-
-instance Eq StateEval where
-    stEv1 == stEv2 = (eval stEv1) == (eval stEv2)
-
-instance Ord StateEval where
-    compare stEv1 stEv2 = compare (eval stEv1) (eval stEv2)
+type StateEval = (Value Int)

@@ -2,6 +2,8 @@ module Checkers.Utilities where
 
 import Checkers.Types
 import Data.List
+import Data.Function
+
 
 -- Types
 data Player = Red | Black
@@ -39,3 +41,9 @@ addPeice (P s) Red st = st{ redPieces = s:(redPieces st) }
 addPeice (K s) Red st = st{ redKings = s:(redKings st) }
 addPeice (P s) Black st = st{ blackPieces = s:(blackPieces st) }
 addPeice (K s) Black st = st{ blackKings = s:(blackKings st) }
+
+
+-- Other
+-- | Returns the last value in given list that maximizes the given function.
+argmax :: (Ord b) => (a -> b) -> [a] -> a
+argmax cmp as = maximumBy (compare `on` cmp) as

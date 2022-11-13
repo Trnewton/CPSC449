@@ -7,7 +7,7 @@ import Checkers.Types
 import Checkers.Moves
 import Checkers.ApplyMove
 import Checkers.Tests
--- import AI.ABsearch
+import AI.ABsearch
 --------------------------------------------------------------------------------------
 --                     Standard library imports:
 --------------------------------------------------------------------------------------
@@ -19,13 +19,15 @@ import System.IO
 import Text.Read
 --------------------------------------------------------------------------------------
 
-main :: IO ()
-main = do -- the Human on Human game configuration
+-- main :: IO ()
+main =
+    -- do print (show testabsearch)
+    do -- the Human on Human game configuration
         hSetBuffering stdin LineBuffering
         runGame $ GameConfig { movemaker = apply_move
-                            , blackMove = Human
-                            , redMove = Human
-                            , state = jump1}
+                            , blackMove = AI (abSearch)
+                            , redMove = AI (abSearch)
+                            , state = initialGameState}
 
 
 {-   Example of configurations for games:
