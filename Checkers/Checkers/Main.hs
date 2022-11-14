@@ -17,6 +17,7 @@ import System.IO
 -- 'Text.Read' is needed for 'readMaybe' since 'read' throws an exception by default
 --  when it parses, but we want to handle the exception ourselves with the 'Maybe' type.
 import Text.Read
+import Data.Time
 --------------------------------------------------------------------------------------
 
 -- main :: IO ()
@@ -73,6 +74,8 @@ runGame g = case (currentMove g) of
         runGame $ g{state = s'}
     Just (AI ai_move) -> do -- AI player
         print (state g)
+        time <- getCurrentTime
+        print time
         runGame $ g{state = (movemaker g) (ai_move (state g)) (state g)}
   where
     currentMove :: GameConfig -> Maybe PlayerType

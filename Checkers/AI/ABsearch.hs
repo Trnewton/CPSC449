@@ -11,28 +11,44 @@ import Data.List
 import Debug.Trace
 
 -- Constants
-maxPly = 6
-kingWeight = 10
+kingWeight = 4
 pawnWeight = 1
 
--- Heuristics
-
+----------------------------
+--      Heuristics
+----------------------------
 -- | Heuristic for evaluating checkers game state from perspective of black player.
 black_heuristic :: GameState -> Value Int
-black_heuristic st = Val (kingWeight * kingFactor + pawnWeight * pieceFactor)
+black_heuristic st = Val eval
     where
+        eval = kingWeight * kingFactor + pawnWeight * pieceFactor
         kingFactor = length (blackKings st) - (length (redKings st))
         pieceFactor = length (blackPieces st) - (length (redPieces st))
 
 -- | Heuristic for evaluating checkers game state from perspective of red player.
 red_heuristic :: GameState -> Value Int
-red_heuristic st = Val (kingWeight * kingFactor + pawnWeight * pieceFactor)
+red_heuristic st = Val eval
     where
+        eval = kingWeight * kingFactor + pawnWeight * pieceFactor
         kingFactor = length (redKings st) - (length (blackKings st))
         pieceFactor = length (redPieces st) - (length (blackPieces st))
 
+-- | Compute ply depth based off gamestate
+ply_depth :: GameState -> Ply
+ply_depth st
+    |num_pieces < 6 = 12
+    |moves_made < 15 = 7
+    |moves_made < 25 = 6
+    |moves_made < 35 = 8
+    |otherwise = 10
+    where
+        moves_made = length (history st)
+        num_pieces = (length (redKings st)) + (length (redPieces st)) + (length (blackKings st)) + (length (blackPieces st))
 
--- Search
+----------------------------
+--      Search Trees
+----------------------------
+
 -- | Creates a game min max tree starting from the perspective of the maximizing player
 makeMaxTree :: Ply -> (GameState -> StateEval) -> GameState -> MaxMin StateEval
 makeMaxTree 0 eval st = case (moves st) of  -- Reached desired ply but apply "waiting for quiescence"
@@ -56,7 +72,10 @@ makeMinTree n eval st = case (moves st) of
                 EndM -> TipMin Top
 
 
--- Basic Min Max Search
+----------------------------
+--   Basic Min Max Search
+----------------------------
+
 -- | Performs a min max evaluation of a minmax tree starting with the max player
 maxeval :: MaxMin StateEval -> StateEval
 maxeval (TipMax v) = v
@@ -69,10 +88,11 @@ mineval (BranchMin branches) = (foldr min Top (map maxeval branches))
 
 -- | Permform min max search starting with a gamestate and returning a maximizing move for current player
 minMaxSearch :: GameState -> Move
-minMaxSearch st = snd $argmax fst (map (\mv -> (moveEval mv, mv)) mvs)  -- Take best move
+minMaxSearch st = snd $ argmax fst (map (\mv -> (moveEval mv, mv)) mvs)  -- Take best move
     where
+        ply = ply_depth st
         -- Evaluate moves while keeping move
-        moveEval mv = mineval (makeMinTree maxPly heuristic (apply_move_no_check mv st))
+        moveEval mv = mineval (makeMinTree ply heuristic (apply_move_no_check mv st))
         heuristic = case (status st) of
                         RedPlayer -> red_heuristic
                         BlackPlayer -> black_heuristic
@@ -82,13 +102,19 @@ minMaxSearch st = snd $argmax fst (map (\mv -> (moveEval mv, mv)) mvs)  -- Take 
             JM mvs -> mvs
             EndM -> []
 
+-----------------------------------------
+--   Alpha-Beta Pruning Min Max Search
+-----------------------------------------
+
 {- | Permform min max search with alpha-beta pruning starting with a gamestate and
 returning a maximizing move for current player
 -}
 abSearch :: GameState -> Move
-abSearch st = snd $argmax fst (map (\mv -> (moveEval mv, mv)) mvs)
+abSearch st = snd $ argmax fst (map (\mv -> (moveEval mv, mv)) mvs)
     where
-        moveEval mv = abminprune (makeMinTree maxPly heuristic (apply_move_no_check mv st)) Bot Top
+        ply = ply_depth st
+        moveEval mv = abminprune (makeMinTree ply heuristic (apply_move_no_check mv st)) Bot Top
+
         heuristic = case (status st) of
                         RedPlayer -> red_heuristic
                         BlackPlayer -> black_heuristic
@@ -128,7 +154,9 @@ abminprunes (t:ts) a b = abminprunes ts a newb  -- Update beta from last branch 
         newb = abmaxprune t a b  -- Perform maximizing search
 
 
+----------------------------
 -- Helper functions
+----------------------------
 
 -- | Updates checkers game state in accordance with a given move, but assumes that move is valid.
 apply_move_no_check:: Move -> GameState -> GameState

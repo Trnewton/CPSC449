@@ -70,3 +70,13 @@ rep2 = GameState {
         [K (6,7),K (7,6)] -- B
     ]
 }
+
+test4 = GameState {
+    blackPieces = [],
+    redPieces = [(1,2),(1,6)],
+    blackKings = [(7,4)],
+    redKings = [(7,6)],
+    status = BlackPlayer,
+    message = "",
+    history = []
+}

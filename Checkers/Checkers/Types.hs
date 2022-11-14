@@ -66,7 +66,7 @@ data GameConfig =
 -- "Show" for the game state ...
 
 instance Show GameState where
-    show g  = concatN ("":x:y:"":xs)
+    show g  = x ++ "\n" ++ y ++ "\n" -- concatN ("":x:y:"":xs)
        where x = show (status g)
              y = "Message:"++message g
              xs = printBoard g

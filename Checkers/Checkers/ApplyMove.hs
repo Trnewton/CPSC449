@@ -23,7 +23,7 @@ apply_move mv st
         (case posMoves of  -- Determine if we have a simple or jump move
             SM _ -> make_simple_move mv st
             JM _ -> make_jump_move mv st)
-            { history = mv:(history st), message = "" }
+            { history = mv:(history st), message = "Total Moves:" ++ show (length (history st) + 1) }
     |otherwise = st{ message=("Bad move.") }
     where
         -- Possible legal moves
