@@ -122,7 +122,26 @@ cousin(A,B):-
 
 
 %%%% Question 7
-contact(_,_,_).
+contact_aux(infect(StartPerson, StartTime), infect(GoalPerson, GoalTime), Path, [infect(StartPerson, StartTime)|Path]):-
+    StartPerson = GoalPerson,
+    7 >= StartTime - GoalTime,
+    0 < StartTime - GoalTime.
+
+contact_aux(infect(StartPerson, StartTime), infect(GoalPerson, GoalTime), Path, Sol):-
+    (
+        met(StartPerson, T, MiddlePerson)
+    ;
+        met(MiddlePerson, T, StartPerson)
+    ),
+    \+ mymember(infect(MiddlePerson, T), Path),
+    7 >= StartTime - T,
+    0 < StartTime - T,
+    contact_aux(infect(MiddlePerson, T), infect(GoalPerson, GoalTime), [infect(StartPerson, StartTime)|Path], Sol).
+
+contact(infect(StartPerson, StartTime), infect(GoalPerson, GoalTime), Sol):-
+    contact_aux(infect(StartPerson, StartTime), infect(GoalPerson, GoalTime), [], Sol).
+
+
 
 
 %%%% Question 8
@@ -138,5 +157,28 @@ contact(_,_,_).
 %   - J: Output position for Josephus (< NumberOfSoldiers)
 %   - A: Output position for the accomplice (< NumberOfSoldiers)
 % where all positions are 0 indexed
-josephus(NumberOfSoldiers, StartingPosition, N, J, A).
 
+josephus(2, _, _, 0, 1).
+josephus(2, _, _, 1, 0).
+josephus(NumberOfSoldiers, StartingPosition, N, J, A):-
+    Dead is ((StartingPosition + N) mod NumberOfSoldiers),
+    NewNumberOfSoldiers is NumberOfSoldiers-1,
+    josephus(NewNumberOfSoldiers, Dead, N, JNew, ANew),
+    (
+        (
+            JT is (JNew + 1),
+            J = JT,
+            Dead < J
+        )
+        ;
+        J is JNew
+    ),
+    (
+        (
+            AT is (ANew + 1),
+            A = AT,
+            Dead < A
+        )
+        ;
+        A is ANew
+    ).
